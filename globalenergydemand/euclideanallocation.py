@@ -8,7 +8,7 @@ import numpy as np
 from geovoronoi import polygon_lines_from_voronoi,polygon_shapes_from_voronoi_lines, coords_to_points, assign_points_to_voronoi_polygons
 from scipy.spatial import Voronoi
 from shapely.strtree import STRtree
-from shapely.ops import cascaded_union
+from shapely.ops import cascaded_union, polygonize
 
 
 warnings.filterwarnings('ignore')
@@ -29,6 +29,7 @@ class EuclideanAllocation:
         self.dist_thresh=0.014
         self.save_dir = save_dir
         logging.info(f'saving to {self.save_dir}')
+        self.wgs_box = geometry.box(-180,-90,180,90)
 
 
 
@@ -134,7 +135,50 @@ class EuclideanAllocation:
 
         poly_lines = polygon_lines_from_voronoi(vor, country_shape)
 
-        poly_shapes = polygon_shapes_from_voronoi_lines(poly_lines, country_shape)
+        """
+        fig, ax = plt.subplots(1,1,figsize=(6,6))
+
+        print ('VLIDDd')
+        print (country_shape.is_valid)
+        for l in poly_lines:
+            xs,ys = l.xy
+            ax.plot(xs,ys,c='g')
+            #for subpp in list(country_shape):
+            #    if subpp.intersects(l):
+            #        xs,ys = subpp.exterior.xy
+            #        ax.plot(xs,ys,c='r')
+        plt.show()
+        """
+
+        fix_poly_lines = []
+
+        for l in poly_lines:
+            if l.intersects(self.wgs_box.exterior):
+                valid_coords = [c for c in l.coords if geometry.Point(c).within(self.wgs_box)]
+                if len(valid_coords)>2:
+                    fix_poly_lines.append(geometry.LineString(valid_coords))
+            else:
+                fix_poly_lines.append(l)
+
+
+        """
+        for l in polygonize(poly_lines):
+            try:
+                print (l.bounds, l.is_valid, l.intersection(country_shape).is_valid)
+            except:
+                fig, ax = plt.subplots(1,1,figsize=(6,6))
+                xs,ys = l.exterior.xy
+                ax.plot(xs,ys,c='g')
+                #for subpp in list(country_shape):
+                #    if subpp.intersects(l):
+                #        xs,ys = subpp.exterior.xy
+                #        ax.plot(xs,ys,c='r')
+                plt.show()
+            if not l.is_valid:
+                print (l.is_valid)
+        """
+
+        poly_shapes = polygon_shapes_from_voronoi_lines(fix_poly_lines, country_shape)
         poly_shapes = [pp for pp in poly_shapes if not pp.is_empty]
 
         points = coords_to_points(vor_coords)
@@ -148,19 +192,20 @@ class EuclideanAllocation:
 
 
 if __name__ == "__main__":
-    rc =RunCountry(
+    rc =EuclideanAllocation(
         countries_path = os.path.join(os.environ['PYTHONPATH'],'data','iso2.csv'), 
         ucdb_path = os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB','GHS_STAT_UCDB2015MT_GLOBE_R2019A_V1_1.gpkg'), 
         ne_path=os.path.join(os.environ['PYTHONPATH'],'data','ne','ne_10m_countries.gpkg') ,
-        save_dir=os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_PROCESSED'))
+        save_dir=os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID'))
 
-    rc.run_country('CN')
+    #rc.run_country('CI')
+
     
-    """
     for iso3 in sorted(rc.ucdb.CTR_MN_ISO.unique()):
+        print (iso3)
         iso2 = rc.iso2_df[rc.iso2_df.iso3==iso3].iloc[0].name
 
-        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_PROCESSED',iso2+'.gpkg')):
+        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID',iso2+'.gpkg')):
             try:
                 rc.run_country(None, iso3)
             except Exception as e:
@@ -168,7 +213,8 @@ if __name__ == "__main__":
                 print (e)
         else:
             print ('exists already', iso3)
-    """
+    
+    
     
 
 
