@@ -1,0 +1,49 @@
+
+joblib_n_jobs: 30
+
+max_geo_matching_distance: 10
+
+snapping_threshold: 0.0000000001
+
+cities_columns:
+  - em_ed_manufacturing
+  - em_ed_nonmetallic_minerals
+  - em_ed_chemical_processes
+  - em_ed_iron_steel_manufacturing
+  - em_ed_nonferrous_metal_production
+  - em_ed_solvent_products
+  - em_sec_industry
+  - en_sec_industry_coal
+  - en_sec_industry_oil
+  - en_sec_industry_gas
+  - em_ed_road_transport
+  - em_ed_other_transport
+  - em_sec_transport
+  - en_sec_transport_coal
+  - en_sec_transport_oil
+  - en_sec_transport_gas
+  - em_ed_buildings
+  - em_sec_buildings
+  - en_sec_buildings_coal
+  - en_sec_buildings_oil
+  - en_sec_buildings_gas
+  - em_ed_aviation_climb_descent
+  - em_sec_aviation
+  - en_sec_aviation_coal
+  - en_sec_aviation_oil
+  - en_sec_aviation_gas
+  - em_ed_agricuture_soils
+  - em_sec_agriculture
+  - en_sec_agriculture_coal
+  - en_sec_agriculture_oil
+  - en_sec_agriculture_gas
+  - em_ed_nonenergy
+  - em_sec_nonenergy
+  - en_sec_nonenergy_coal
+  - en_sec_nonenergy_oil
+  - en_sec_nonenergy_gas
+  - em_ed_shipping
+  - em_sec_shipping
+  - en_sec_shipping_coal
+  - en_sec_shipping_oil
+  - en_sec_shipping_gas
