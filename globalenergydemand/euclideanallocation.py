@@ -46,24 +46,27 @@ class EuclideanAllocation:
             self.iso3 = self.iso2_df.at[self.iso2,'iso3']
         elif country_iso3:
             self.iso3 = country_iso3
+            print (self.iso2_df[self.iso2_df.iso3==self.iso3])
             self.iso2 = self.iso2_df[self.iso2_df.iso3==self.iso3].iloc[0].name
         logging.info(f'Running country: {self.iso2, self.iso3}')
 
-        country_shape = self.ne[self.ne.ISO_A3==self.iso3].iloc[0].geometry
-        #print ('country_shape valid', country_shape.is_valid)
-        #print (self.ucdb.XC_ISO_LST)
+        country_shape = self.ne[self.ne.ISO_A3==self.iso3]
+
+        country_shape = country_shape.iloc[0].geometry
+        
         ucdb_slice = self.ucdb[self.ucdb.XC_ISO_LST.str.contains(self.iso3)]
+
         ucdb_slice['geometry'] = ucdb_slice['geometry'].buffer(0)
-        #print (np.sum(~ucdb_slice.is_valid))
 
         # Clip off country border
         ucdb_slice['geometry'] = ucdb_slice['geometry'].intersection(country_shape)
+
         ucdb_slice = ucdb_slice[~ucdb_slice['geometry'].is_empty]
 
         ucdb_slice, voronoi_shapes, all_coords = self.voronoi_ucs(ucdb_slice, country_shape)
 
         all_ucdb_mp = cascaded_union(ucdb_slice['geometry'])
-        #print ('all mp',all_ucdb_mp)
+
 
         ucdb_slice.loc[:,'exp_geom'] = ucdb_slice.apply(lambda row: self._rm_mp(row,all_ucdb_mp), axis=1)
 
@@ -82,6 +85,7 @@ class EuclideanAllocation:
             ax.text(row[1]['exp_geom'].centroid.x, row[1]['exp_geom'].centroid.y, row[1]['UC_NM_LST'], bbox=bbox)
 
         fig.savefig(os.path.join(self.save_dir,self.iso2+'.png'), dpi=200)
+        
         ucdb_slice['geom_gj'] = ucdb_slice.apply(lambda row: row['geometry'].__geo_interface__, axis=1)
         ucdb_slice = ucdb_slice.set_geometry('exp_geom').drop(columns=['geometry'])
 
@@ -198,21 +202,25 @@ if __name__ == "__main__":
         ne_path=os.path.join(os.environ['PYTHONPATH'],'data','ne','ne_10m_countries.gpkg') ,
         save_dir=os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID'))
 
-    #rc.run_country('CI')
 
-    
+    print (sorted(rc.ucdb.CTR_MN_ISO.unique()))
+
     for iso3 in sorted(rc.ucdb.CTR_MN_ISO.unique()):
-        print (iso3)
-        iso2 = rc.iso2_df[rc.iso2_df.iso3==iso3].iloc[0].name
+        if iso3=='NAM':
+            iso2='NA'
+        else:
+            iso2 = rc.iso2_df[rc.iso2_df.iso3==iso3].iloc[0].name
 
         if not os.path.exists(os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID',iso2+'.gpkg')):
             try:
-                rc.run_country(None, iso3)
+                rc.run_country(None, str(iso3))
             except Exception as e:
-                print ('ruh roh', iso3)
+                print ('ruh roh', str(iso3))
                 print (e)
         else:
-            print ('exists already', iso3)
+            print ('exists already', str(iso3))
+
+    
     
     
     
