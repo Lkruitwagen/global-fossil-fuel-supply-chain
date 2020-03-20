@@ -8,6 +8,8 @@ import numpy as np
 from shapely.affinity import affine_transform
 from PIL import Image, ImageDraw
 from shapely import wkt, geometry
+from tqdm import tqdm
+tqdm.pandas()
 
 
 warnings.filterwarnings('ignore')
@@ -26,6 +28,7 @@ class EnergyAllocation:
         self.iso2_df = pd.read_csv(countries_path).set_index('iso2')
         self.ucdbs_path = ucdbs_path
         self.save_dir = save_dir
+        self.iea_path = iea_path
         iea_files = glob.glob(iea_path+'/*')
         iea_files = [f for f in iea_files if not (('WORLD' in f) or ('iso_lookup' in f))]
         self.iea_dict = {f.split('_')[-1][0:2]:f for f in iea_files}
@@ -94,7 +97,7 @@ class EnergyAllocation:
             plt.show()
         """
 
-    def run_country(self, country_iso2, country_iso3=None):
+    def run_country(self, country_iso2, country_iso3=None, to_file=True):
 
         if country_iso2:
             self.iso2 = country_iso2
@@ -104,7 +107,16 @@ class EnergyAllocation:
             self.iso2 = self.iso2_df[self.iso2_df.iso3==self.iso3].iloc[0].name
         logging.info(f'Running country: {self.iso2, self.iso3}')
 
-        self.iea_df = pd.read_csv(self.iea_dict[self.iso2]).set_index('Unnamed: 0')
+        # What if there is no IEA??? get population portion from remaining countries and use REM.csv
+
+        if self.iso2 not in list(self.iea_dict.keys()):
+            logging.info(f'Balances not available, allocating proportionally to population.')
+            self.iea_df = pd.read_csv(os.path.join(self.iea_path, 'REM.csv')).set_index('Unnamed: 0')
+            self.iea_df = self.iea_df * self.iso2_df.at[self.iso2,'non_file_pop_portion']
+
+        else:
+            self.iea_df = pd.read_csv(self.iea_dict[self.iso2]).set_index('Unnamed: 0')
+
         self.iea_df.index = self.iea_df.index.str.lower()
 
         self.iea_df = self.iea_df.append(self.iea_df.loc[['commercial and public services','residential'],:].sum().rename('buildings'))
@@ -117,9 +129,9 @@ class EnergyAllocation:
                 logging.info(f'Doing rast key {rast_key}')
                 if kk=='shipping':
                     #buffer shipping so it grabs the maritime traffic
-                    self.ucdb_country['em_ed_'+rast_key] = self.ucdb_country.apply(lambda row: self._sample_raster(self.edgars[rast_key],geometry.shape(json.loads(row['geom_gj'])).buffer(0.5), row['UC_NM_MN']), axis=1)
+                    self.ucdb_country['em_ed_'+rast_key] = self.ucdb_country.progress_apply(lambda row: self._sample_raster(self.edgars[rast_key],geometry.shape(json.loads(row['geom_gj'])).buffer(0.5), row['UC_NM_MN']), axis=1)
                 else:
-                    self.ucdb_country['em_ed_'+rast_key] = self.ucdb_country.apply(lambda row: self._sample_raster(self.edgars[rast_key],row['geometry'], row['UC_NM_MN']), axis=1)
+                    self.ucdb_country['em_ed_'+rast_key] = self.ucdb_country.progress_apply(lambda row: self._sample_raster(self.edgars[rast_key],row['geometry'], row['UC_NM_MN']), axis=1)
 
             sec_cols = ['em_ed_'+c for c in vv['edgars']]
             self.ucdb_country['em_sec_'+kk] = self.ucdb_country.loc[:,sec_cols].sum(axis=1)
@@ -145,7 +157,11 @@ class EnergyAllocation:
             self.ucdb_country['en_sec_'+kk+'_coal'] = (self.ucdb_country['en_sec_'+kk+'_coal'] / self.ucdb_country['en_sec_'+kk+'_coal'].sum()).fillna(0) * -1 * self.iea_df.at[self.sectors[kk]['iea_cols'],'Coal*'] * self.units['GJ-per-ktoe']
             self.ucdb_country['en_sec_'+kk+'_oil'] = (self.ucdb_country['en_sec_'+kk+'_oil'] / self.ucdb_country['en_sec_'+kk+'_oil'].sum()).fillna(0) * -1 *self.iea_df.at[self.sectors[kk]['iea_cols'],'Oil products'] * self.units['GJ-per-ktoe']
             self.ucdb_country['en_sec_'+kk+'_gas'] = (self.ucdb_country['en_sec_'+kk+'_gas'] / self.ucdb_country['en_sec_'+kk+'_gas'].sum()).fillna(0) * -1 *self.iea_df.at[self.sectors[kk]['iea_cols'],'Natural gas'] * self.units['GJ-per-ktoe']
+        
+        self.ucdb_country = self.ucdb_country.fillna(0)
 
+        if to_file:
+            self.ucdb_country.to_file(os.path.join(self.save_dir,self.iso2+'.gpkg'),driver='GPKG')
 
     def _sample_raster(self,raster,rowshp,name):
 
@@ -165,17 +181,19 @@ class EnergyAllocation:
 
         mask = np.array(im)
 
-        logging.info(f'{name}, {np.sum(raster*(mask>0))}')
+        #logging.info(f'{name}, {np.sum(raster*(mask>0))}')
 
         return np.sum(raster*(mask>0))
 
-    def visualise_country(self):
+    def visualise_country(self, to_file=True, showfig=False):
         fig, axs = plt.subplots(len(self.sectors.keys()),3,figsize=(len(self.sectors.keys())*6,18))
 
         for ii_k,kk in enumerate(self.sectors.keys()):
             for ii_vec, vec in enumerate(['coal','oil','gas']):
                 #print (self.ucdb_country['en_sec_'+kk+'_'+vec])
+                #print (self.ucdb_country.loc[:,'en_sec_'+kk+'_'+vec])
                 self.ucdb_country.plot(column='en_sec_'+kk+'_'+vec, ax=axs[ii_k,ii_vec])
+
                 if ii_vec !=0:
                     axs[ii_k,ii_vec].axis('off')
                 else:
@@ -194,7 +212,11 @@ class EnergyAllocation:
         for ii_k,kk in enumerate(self.sectors.keys()):
             axs[ii_k,0].set_ylabel(kk)
 
-        plt.show()
+        if to_file:
+            plt.savefig(os.path.join(self.save_dir,self.iso2+'.png'))
+
+        if showfig:
+            plt.show()
 
 
 
@@ -207,5 +229,20 @@ if __name__ == "__main__":
             ucdbs_path=os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID'), 
             ne_path=os.path.join(os.environ['PYTHONPATH'],'data','ne'),
             save_dir=os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_ENERGY'))
-    ea.run_country('IE')
-    ea.visualise_country()
+
+    all_countries = sorted(
+                        list(
+                            set(
+                                [f.split('/')[-1][0:2] for f in glob.glob(os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_EUCLID','*'))])))
+
+    for iso2 in all_countries:
+
+        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'],'data','GHSL_UCDB_ENERGY',iso2+'.gpkg')):
+            try:
+                ea.run_country(iso2)
+                ea.visualise_country()
+            except Exception as e:
+                print ('ruh roh', str(iso2))
+                print (e)
+        else:
+            print ('exists already', str(iso2))
