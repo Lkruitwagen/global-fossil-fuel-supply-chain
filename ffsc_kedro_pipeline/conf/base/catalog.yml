@@ -1,0 +1,313 @@
+##################################################
+## RAW DATA
+##################################################
+
+raw_shipping_routes_data:
+  type: kedro.io.JSONLocalDataSet
+  filepath:data/shipping_routes.geojson
+
+raw_ports_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/ports.geojson
+  encoding: "ISO-8859-1"
+
+raw_pipelines_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/pipelines.geojson
+  encoding: "ISO-8859-1"
+
+raw_coal_mines_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/coal_mines.geojson
+  encoding: "ISO-8859-1"
+
+raw_oil_field_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/fields.geojson
+  encoding: "ISO-8859-1"
+
+raw_liquid_natural_gas_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/lng.geojson
+  encoding: "ISO-8859-1"
+
+raw_power_stations_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/power_stations.geojson
+  encoding: "ISO-8859-1"
+
+raw_processing_plants_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/processing_plants.geojson
+  encoding: "ISO-8859-1"
+
+raw_railways_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/railways.geojson
+  encoding: "ISO-8859-1"
+
+raw_refineries_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/refineries.geojson
+  encoding: "ISO-8859-1"
+
+raw_well_pads_data:
+  type: ffsc.datasets.JSONLocalDataSet
+  filepath:data/well_pads.geojson
+  encoding: "ISO-8859-1"
+
+raw_cities_energy_data:
+  type: ffsc.datasets.GPKGDataSet
+  dirpath:data/cities/energy
+  filelistpath:data/cities/country_codes.csv
+
+raw_cities_euclidean_data:
+  type: ffsc.datasets.GPKGDataSet
+  dirpath:data/cities/euclidean
+  filelistpath:data/cities/country_codes.csv
+
+##################################################
+## INTERMEDIATE LAYER
+##################################################
+int_pipelines_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/intermediate/int_pipelines_data.pkl
+
+int_railways_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/intermediate/int_railways_data.pkl
+
+int_cities_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/intermediate/int_cities_data.pkl
+
+##################################################
+## PRIMARY LAYER
+##################################################
+
+prm_shipping_routes_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_shipping_routes_data.pkl
+
+prm_ports_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_ports_data.pkl
+
+prm_pipelines_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_pipelines_data.pkl
+
+prm_coal_mine_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_coal_mine_data.pkl
+
+prm_oil_field_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_oil_field_data.pkl
+
+prm_liquid_natural_gas_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_liquid_natural_gas_data.pkl
+
+prm_power_stations_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_power_stations_data.pkl
+
+prm_processing_plants_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_processing_plants_data.pkl
+
+prm_railways_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_railways_data.pkl
+
+prm_refineries_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_refineries_data.pkl
+
+prm_well_pads_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_well_pads_data.pkl
+
+##################################################
+## GEOMATCHING
+##################################################
+
+prm_ports_matched_with_routes:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_ports_matched_with_routes.pkl
+
+prm_cities_data:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_cities_data.pkl
+
+prm_cities_matched_with_pipelines_and_railways:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_cities_matched_with_pipelines_and_railways.pkl
+
+prm_refineries_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_refineries_matched_with_pipelines.pkl
+
+prm_oil_field_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_oil_field_matched_with_pipelines.pkl
+
+prm_well_pads_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_well_pads_matched_with_pipelines.pkl
+
+prm_ports_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_ports_matched_with_pipelines.pkl
+
+prm_liquid_natural_gas_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_liquid_natural_gas_matched_with_pipelines.pkl
+
+prm_lng_terminals_matched_with_routes:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_lng_terminals_matched_with_routes.pkl
+
+prm_processing_plants_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_processing_plants_matched_with_pipelines.pkl
+
+prm_power_stations_data_matched_with_pipelines:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_power_stations_data_matched_with_pipelines.pkl
+
+prm_power_stations_data_matched_with_railways:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_power_stations_data_matched_with_railways.pkl
+
+prm_coal_mines_merged_with_railways:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_coal_mines_merged_with_railways.pkl
+
+prm_ports_merged_with_railways:
+  type: kedro.io.PickleLocalDataSet
+  filepath: results/primary/prm_ports_merged_with_railways.pkl
+
+
+##################################################
+## GRAPH OUTPUT LAYER
+##################################################
+
+# Tables
+
+shipping_node_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/shipping_node_dataframe.csv
+
+shipping_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/shipping_edge_dataframe.csv
+
+port_node_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/port_node_dataframe.csv
+
+port_ship_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/port_ship_edge_dataframe.csv
+
+port_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/port_pipeline_edge_dataframe.csv
+
+pipeline_node_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/pipeline_node_dataframe.csv
+
+pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/pipeline_edge_dataframe.csv
+
+refinery_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/refinery_nodes_dataframe.csv
+
+refinery_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/refinery_pipeline_edge_dataframe.csv
+
+oil_field_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/oil_field_nodes_dataframe.csv
+
+oil_field_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/oil_field_edge_dataframe.csv
+
+well_pad_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/well_pad_nodes_dataframe.csv
+
+well_pad_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/well_pad_pipeline_edge_dataframe.csv
+
+lng_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/lng_nodes_dataframe.csv
+
+lng_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/lng_pipeline_edge_dataframe.csv
+
+lng_shipping_route_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/lng_shipping_route_edge_dataframe.csv
+
+processing_plant_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/processing_plant_nodes_dataframe.csv
+
+processing_plant_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/processing_plant_pipeline_edge_dataframe.csv
+
+power_station_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/power_station_nodes_dataframe.csv
+
+power_station_pipeline_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/power_station_pipeline_edge_dataframe.csv
+
+power_station_railway_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/power_station_railway_edge_dataframe.csv
+
+railway_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/railway_nodes_dataframe.csv
+
+railway_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/railway_edge_dataframe.csv
+
+coal_mines_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/coal_mines_nodes_dataframe.csv
+
+coal_mine_railway_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/coal_mine_railway_edge_dataframe.csv
+
+cities_nodes_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/cities_nodes_dataframe.csv
+
+cities_pipelines_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/cities_pipelines_edge_dataframe.csv
+
+cities_railways_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/cities_railways_edge_dataframe.csv
+
+cities_ports_edge_dataframe:
+  type: kedro.io.CSVLocalDataSet
+  filepath: results/output/cities_ports_edge_dataframe.csv

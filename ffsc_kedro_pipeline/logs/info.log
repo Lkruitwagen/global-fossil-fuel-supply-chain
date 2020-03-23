@@ -1,0 +1,33 @@
+2020-03-13 12:24:44,958 - werkzeug - INFO -  * Running on http://127.0.0.1:4141/ (Press CTRL+C to quit)
+2020-03-13 12:24:45,356 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:45] "[33mGET /logs/nodes.json HTTP/1.1[0m" 404 -
+2020-03-13 12:24:45,420 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:45] "[37mGET /service-worker.js HTTP/1.1[0m" 200 -
+2020-03-13 12:24:45,424 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:45] "[37mGET /manifest.json HTTP/1.1[0m" 200 -
+2020-03-13 12:24:45,425 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:45] "[37mGET /favicon.ico HTTP/1.1[0m" 200 -
+2020-03-13 12:24:46,980 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:46] "[36mGET /service-worker.js HTTP/1.1[0m" 304 -
+2020-03-13 12:24:47,088 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /precache-manifest.6f270ee82a6e3411ae454b289279e97b.js HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,169 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /index.html?__WB_REVISION__=1f8e843ca95196a04e714347a84766f5 HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,175 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/css/2.3a553cd5.chunk.css?__WB_REVISION__=427e37c4b44c282597f2 HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,176 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/js/2.b45fb3a0.chunk.js?__WB_REVISION__=427e37c4b44c282597f2 HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,177 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/js/main.199a1de1.chunk.js?__WB_REVISION__=4cd012fd9708e91b176a HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,177 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/js/2.b45fb3a0.chunk.js.LICENSE?__WB_REVISION__=54120cd43cbbd1b3b4c14b86ca02f064 HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,177 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/css/main.9f6069ce.chunk.css?__WB_REVISION__=4cd012fd9708e91b176a HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,178 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/js/runtime-main.6cb937c6.js?__WB_REVISION__=c88a607ed4c298f69081 HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,186 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/media/brodyquest.6259cc84.mp3?__WB_REVISION__=6259cc84bb236512f69bc1d20397254c HTTP/1.1[0m" 200 -
+2020-03-13 12:24:47,187 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:24:47] "[37mGET /static/media/easter-egg.e702bd5f.png?__WB_REVISION__=e702bd5fc3663eda7c4459232f5a76c0 HTTP/1.1[0m" 200 -
+2020-03-13 12:26:19,272 - werkzeug - INFO -  * Running on http://127.0.0.1:4141/ (Press CTRL+C to quit)
+2020-03-13 12:26:19,435 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:26:19] "[37mGET /api/nodes.json HTTP/1.1[0m" 200 -
+2020-03-13 12:26:19,657 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:26:19] "[36mGET /manifest.json HTTP/1.1[0m" 304 -
+2020-03-13 12:26:22,316 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:26:22] "[36mGET /service-worker.js HTTP/1.1[0m" 304 -
+2020-03-13 12:26:22,322 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 12:26:22] "[36mGET /precache-manifest.6f270ee82a6e3411ae454b289279e97b.js HTTP/1.1[0m" 304 -
+2020-03-13 14:30:56,239 - werkzeug - INFO -  * Running on http://127.0.0.1:4141/ (Press CTRL+C to quit)
+2020-03-13 14:30:56,486 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 14:30:56] "[37mGET /api/nodes.json HTTP/1.1[0m" 200 -
+2020-03-13 14:30:56,757 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 14:30:56] "[36mGET /manifest.json HTTP/1.1[0m" 304 -
+2020-03-13 14:31:00,421 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 14:31:00] "[36mGET /service-worker.js HTTP/1.1[0m" 304 -
+2020-03-13 14:31:00,439 - werkzeug - INFO - 127.0.0.1 - - [13/Mar/2020 14:31:00] "[36mGET /precache-manifest.6f270ee82a6e3411ae454b289279e97b.js HTTP/1.1[0m" 304 -
+2020-03-16 16:35:37,220 - werkzeug - INFO -  * Running on http://127.0.0.1:4141/ (Press CTRL+C to quit)
+2020-03-16 16:35:37,561 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:35:37] "[37mGET /api/nodes.json HTTP/1.1[0m" 200 -
+2020-03-16 16:35:37,845 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:35:37] "[36mGET /manifest.json HTTP/1.1[0m" 304 -
+2020-03-16 16:35:40,467 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:35:40] "[37mGET /service-worker.js HTTP/1.1[0m" 200 -
+2020-03-16 16:35:40,478 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:35:40] "[37mGET /precache-manifest.6f270ee82a6e3411ae454b289279e97b.js HTTP/1.1[0m" 200 -
+2020-03-16 16:36:38,428 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:36:38] "[36mGET /service-worker.js HTTP/1.1[0m" 304 -
+2020-03-16 16:36:38,435 - werkzeug - INFO - 127.0.0.1 - - [16/Mar/2020 16:36:38] "[36mGET /precache-manifest.6f270ee82a6e3411ae454b289279e97b.js HTTP/1.1[0m" 304 -
