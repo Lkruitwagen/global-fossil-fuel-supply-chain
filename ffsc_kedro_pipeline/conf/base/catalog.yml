@@ -4,67 +4,67 @@
 
 raw_shipping_routes_data:
   type: kedro.io.JSONLocalDataSet
-  filepath:data/shipping_routes.geojson
+  filepath: data/shipping_routes.geojson
 
 raw_ports_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/ports.geojson
+  filepath: data/ports.geojson
   encoding: "ISO-8859-1"
 
 raw_pipelines_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/pipelines.geojson
+  filepath: data/pipelines.geojson
   encoding: "ISO-8859-1"
 
 raw_coal_mines_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/coal_mines.geojson
+  filepath: data/coal_mines.geojson
   encoding: "ISO-8859-1"
 
 raw_oil_field_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/fields.geojson
+  filepath: data/fields.geojson
   encoding: "ISO-8859-1"
 
 raw_liquid_natural_gas_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/lng.geojson
+  filepath: data/lng.geojson
   encoding: "ISO-8859-1"
 
 raw_power_stations_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/power_stations.geojson
+  filepath: data/power_stations.geojson
   encoding: "ISO-8859-1"
 
 raw_processing_plants_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/processing_plants.geojson
+  filepath: data/processing_plants.geojson
   encoding: "ISO-8859-1"
 
 raw_railways_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/railways.geojson
+  filepath: data/railways.geojson
   encoding: "ISO-8859-1"
 
 raw_refineries_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/refineries.geojson
+  filepath: data/refineries.geojson
   encoding: "ISO-8859-1"
 
 raw_well_pads_data:
   type: ffsc.datasets.JSONLocalDataSet
-  filepath:data/well_pads.geojson
+  filepath: data/well_pads.geojson
   encoding: "ISO-8859-1"
 
 raw_cities_energy_data:
   type: ffsc.datasets.GPKGDataSet
-  dirpath:data/cities/energy
-  filelistpath:data/cities/country_codes.csv
+  dirpath: data/cities/energy
+  filelistpath: data/cities/country_codes.csv
 
 raw_cities_euclidean_data:
   type: ffsc.datasets.GPKGDataSet
-  dirpath:data/cities/euclidean
-  filelistpath:data/cities/country_codes.csv
+  dirpath: data/cities/euclidean
+  filelistpath: data/cities/country_codes.csv
 
 ##################################################
 ## INTERMEDIATE LAYER
