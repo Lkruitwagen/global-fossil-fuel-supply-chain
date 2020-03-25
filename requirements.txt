@@ -41,6 +41,7 @@ jupyter==1.0.0
 jupyter-client==5.3.4
 jupyter-console==6.1.0
 jupyter-core==4.6.1
+kedro==0.15.8
 kiwisolver==1.1.0
 mapclassify==2.2.0
 MarkupSafe==1.1.1
