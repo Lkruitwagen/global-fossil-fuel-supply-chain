@@ -88,6 +88,7 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
 
 
     # load the df
+    logger.info(f'Loading the edge df... {time.time()-tic:.2f}')
     edges_df = pd.read_csv(edges_df_path)
 
     # instatiate the undirected graph object
@@ -100,8 +101,11 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
     ## for each subgraph, simplify
     drop_nodes = []
     new_edges = []
+    logger.info(f'n sugraph nodes {len(subgraph_nodes)}... {time.time()-tic:.2f}')
 
     for ii_g, g in enumerate(subgraph_nodes):
+        if ii_g % 100==0:
+            logger.info(f'ii_g {ii_g}... {time.time()-tic:.2f}')
         # get subgraph
         subgraph = G.subgraph(g)
 
@@ -125,6 +129,7 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
         drop_nodes += drop_nodes_subgraph
         new_edges += [new_edge]
 
+    logger.info(f'dumping to pickle... {time.time()-tic:.2f}')
     pickle.dump(drop_nodes, open(os.path.join(outpath,str(ii_mp)+'_drop_nodes.pkl'),'wb'))
     pickle.dump(new_edges, open(os.path.join(outpath,str(ii_mp)+'_new_edges.pkl'),'wb'))
 
@@ -140,7 +145,7 @@ def mp_simplify_graph(subgraph_nodes):
     logger.info(f'running pool... {time.time()-tic:.2f}')
 
     pool = mp.Pool(NWORKERS)
-    results = pool.starmap(_worker_simplify_edges, list(zip(range(NWORKERS), subgraph_nodes, params, outpath
+    results = pool.starmap(_worker_simplify_edges, list(zip(range(NWORKERS),
                                                         [os.path.join(os.getcwd(),'results_backup','output',params['fname_edges'])]*NWORKERS,
                                                         ll_subgraph_nodes,
                                                         [params]*NWORKERS,
@@ -165,13 +170,14 @@ if __name__=="__main__":
     }
 
     logger.info(f'getting keep_nodes. {time.time()-tic0:.2f} ...')
-    keep_nodes = gen_keep_nodes('pipeline',params)
+    #keep_nodes = gen_keep_nodes('pipeline',params)
 
     logger.info(f'got keep_nodes. {time.time()-tic0:.2f} loading edges df ...')
-    edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
+    #edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
 
     logger.info(f'got edges df. {time.time()-tic0:.2f} getting subgraph nodes ...')
-    subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
+    #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
+    subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'))
 
     logger.info(f'got subgraph nodes. {time.time()-tic0:.2f} running mp simplify ...')
     mp_simplify_graph(subgraph_nodes)
