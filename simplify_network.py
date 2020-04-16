@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 import multiprocessing as mp
 
-NWORKERS = mp.cpu_count()//2
+NWORKERS = mp.cpu_count()//4
 
 logger=logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -109,25 +109,27 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
         # get subgraph
         subgraph = G.subgraph(g)
 
-        # get endpoints of component
-        end_pts = {node:val for (node, val) in subgraph.degree() if val==1}
+        if len(subgraph.nodes)>2:
 
-        # get nodes to drop
-        drop_nodes_subgraph = list(g-set(end_pts.keys()))
+            # get endpoints of component
+            end_pts = {node:val for (node, val) in subgraph.degree() if val==1}
 
-        # create new edge
-        new_dist = sum([e[2]['distance'] for e in subgraph.edges(data=True)])
-        new_edge = {
-            params['node_start_col']:list(end_pts)[0],
-            params['node_end_col']:list(end_pts)[1],
-            ':TYPE':params['TYPE'],
-            'distance':new_dist,
-            'impedance':new_dist**2,
-        }
+            # get nodes to drop
+            drop_nodes_subgraph = list(g-set(end_pts.keys()))
 
-        # add to list collection
-        drop_nodes += drop_nodes_subgraph
-        new_edges += [new_edge]
+            # create new edge
+            new_dist = sum([e[2]['distance'] for e in subgraph.edges(data=True)])
+            new_edge = {
+                params['node_start_col']:list(end_pts)[0],
+                params['node_end_col']:list(end_pts)[1],
+                ':TYPE':params['TYPE'],
+                'distance':new_dist,
+                'impedance':new_dist**2,
+            }
+
+            # add to list collection
+            drop_nodes += drop_nodes_subgraph
+            new_edges += [new_edge]
 
     logger.info(f'dumping to pickle... {time.time()-tic:.2f}')
     pickle.dump(drop_nodes, open(os.path.join(outpath,str(ii_mp)+'_drop_nodes.pkl'),'wb'))
