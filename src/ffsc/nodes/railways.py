@@ -16,7 +16,8 @@ from typing import List, AnyStr
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-NPARTITIONS=6
+import multiprocessing as mp
+NPARTITIONS=mp.cpu_count()-2
 #from dask.distributed import Client
 #client = Client(processes=4)
 import dask.dataframe as dd

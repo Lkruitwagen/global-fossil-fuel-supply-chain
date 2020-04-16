@@ -12,7 +12,8 @@ from typing import List, Dict, AnyStr
 
 from shapely.geometry import Point, MultiPoint
 
-NPARTITIONS=6
+import multiprocessing as mp
+NPARTITIONS=mp.cpu_count()-2
 #from dask.distributed import Client
 #client = Client(processes=4)
 import dask.dataframe as dd
