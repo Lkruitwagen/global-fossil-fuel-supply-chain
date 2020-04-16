@@ -13,7 +13,7 @@ from typing import List, Dict, AnyStr
 from shapely.geometry import Point, MultiPoint
 
 import multiprocessing as mp
-NPARTITIONS=mp.cpu_count()-2
+NPARTITIONS=mp.cpu_count()//2
 
 from dask.distributed import Client
 client = Client(n_workers=NPARTITIONS)
