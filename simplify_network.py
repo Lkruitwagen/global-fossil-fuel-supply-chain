@@ -9,7 +9,7 @@ NWORKERS = mp.cpu_count()//2
 logger=logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-tic0=time.time()
+tic=time.time()
 
 def gen_keep_nodes(network, params):
     df_names = {
@@ -169,17 +169,17 @@ if __name__=="__main__":
         'colstr':'PipelineNode',
     }
 
-    logger.info(f'getting keep_nodes. {time.time()-tic0:.2f} ...')
+    logger.info(f'getting keep_nodes. {time.time()-tic:.2f} ...')
     #keep_nodes = gen_keep_nodes('pipeline',params)
 
-    logger.info(f'got keep_nodes. {time.time()-tic0:.2f} loading edges df ...')
+    logger.info(f'got keep_nodes. {time.time()-tic:.2f} loading edges df ...')
     #edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
 
-    logger.info(f'got edges df. {time.time()-tic0:.2f} getting subgraph nodes ...')
+    logger.info(f'got edges df. {time.time()-tic:.2f} getting subgraph nodes ...')
     #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
     subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'),'rb'))
 
-    logger.info(f'got subgraph nodes. {time.time()-tic0:.2f} running mp simplify ...')
+    logger.info(f'got subgraph nodes. {time.time()-tic:.2f} running mp simplify ...')
     mp_simplify_graph(subgraph_nodes)
 
     # tidy_nodes_edges_dfs
