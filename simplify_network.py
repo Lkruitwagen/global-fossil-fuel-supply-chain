@@ -177,7 +177,7 @@ if __name__=="__main__":
 
     logger.info(f'got edges df. {time.time()-tic0:.2f} getting subgraph nodes ...')
     #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
-    subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'))
+    subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'),'rb'))
 
     logger.info(f'got subgraph nodes. {time.time()-tic0:.2f} running mp simplify ...')
     mp_simplify_graph(subgraph_nodes)
