@@ -135,7 +135,7 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
     pickle.dump(drop_nodes, open(os.path.join(outpath,str(ii_mp)+'_drop_nodes.pkl'),'wb'))
     pickle.dump(new_edges, open(os.path.join(outpath,str(ii_mp)+'_new_edges.pkl'),'wb'))
 
-def mp_simplify_graph(subgraph_nodes):
+def mp_simplify_graph(subgraph_nodes, pkl_path):
 
     chunk_len = len(subgraph_nodes)//NWORKERS +1
 
@@ -151,37 +151,80 @@ def mp_simplify_graph(subgraph_nodes):
                                                         [os.path.join(os.getcwd(),'results_backup','output',params['fname_edges'])]*NWORKERS,
                                                         ll_subgraph_nodes,
                                                         [params]*NWORKERS,
-                                                        [os.path.join(os.getcwd(),'results_backup','pipeline_simplify')]*NWORKERS )))
+                                                        [pkl_path]*NWORKERS )))
 
     print (results)
 
-def tidy_nodes_edges_dfs():
-    pass
+def tidy_nodes_edges_dfs(edges_df,params, outpath):
+
+    logger.info(f'loading drop nodes and new edges ...')
+    drop_node_files = glob.glob(os.path.join(params['pkl_path'],'*_drop_nodes.pkl'))
+    new_edge_files = glob.glob(os.path.join(params['pkl_path'],'*_new_edges.pkl'))
+    print (drop_node_files)
+    print (new_edge_files)
+
+    new_edges = []
+    for f in new_edge_files:
+        new_edges += pickle.load(open(f,'rb'))
+    drop_nodes = []
+    for f in drop_node_files:
+        drop_nodes += pickle.load(open(f,'rb'))
+
+    new_edges = pd.DataFrame(new_edges)
+
+    
+    logger.info(f'collecting drop edges...')
+    drop_edge_index = edges_df[params['node_start_col']].isin(drop_nodes).values \
+    + edges_df[params['node_end_col']].isin(drop_nodes).values
+    
+    logger.info(f'adding {len(new_edges)} new edges, dropping {len(drop_nodes)} nodes ...')
+    #print (dfs['pipeline_edge_dataframe'][edge_index])
+    
+    edges_df.drop(index=edges_df[drop_edge_index].index, inplace=True)
+    edges_df.drop(index=drop_nodes, inplace=True)
+    edges_df = edges_df.append(new_edges, ignore_index=True)#
+
+    logger.info(f'Writing to disk ...')
+    edges_df.to_csv(os.path.join(outpath, params['fname_edges']))
 
 
 
 if __name__=="__main__":
 
+    RUN = 'pipeline'
 
-    params = {
-        'node_start_col':'StartNodeId:START_ID(PipelineNode)',
-        'node_end_col':'EndNodeId:END_ID(PipelineNode)',
-        'TYPE':'PIPELINE_CONNECTION',
-        'fname_edges':'pipeline_edge_dataframe.csv',
-        'colstr':'PipelineNode',
-    }
+    if RUN=='pipeline':
+        params = {
+            'node_start_col':'StartNodeId:START_ID(PipelineNode)',
+            'node_end_col':'EndNodeId:END_ID(PipelineNode)',
+            'TYPE':'PIPELINE_CONNECTION',
+            'fname_edges':'pipeline_edge_dataframe.csv',
+            'pkl_path':os.path.join(os.getcwd(),'results_backup','pipeline_simplify'),
+            'colstr':'PipelineNode',
+        }
+    elif RUN=='railway':
+        params = {
+            'node_start_col':'StartNodeId:START_ID(RailwayNode)',
+            'node_end_col':'EndNodeId:END_ID(RailwayNode)',
+            'TYPE':'RAILWAY_CONNECTION',
+            'fname_edges':'railway_edge_dataframe.csv',
+            'pkl_path':os.path.join(os.getcwd(),'results_backup','railways_simplify'),
+            'colstr':'RailwayNode',
+        }
 
     logger.info(f'getting keep_nodes. {time.time()-tic:.2f} ...')
     #keep_nodes = gen_keep_nodes('pipeline',params)
 
     logger.info(f'got keep_nodes. {time.time()-tic:.2f} loading edges df ...')
-    #edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
+    edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
 
     logger.info(f'got edges df. {time.time()-tic:.2f} getting subgraph nodes ...')
     #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
     subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'),'rb'))
 
     logger.info(f'got subgraph nodes. {time.time()-tic:.2f} running mp simplify ...')
-    mp_simplify_graph(subgraph_nodes)
+    # mp_simplify_graph(subgraph_nodes, params['pkl_path'])
 
-    # tidy_nodes_edges_dfs
+    logger.info(f'tidying edge and node df {time.time()-tic:.2f}')
+    outpath = os.path.join(os.getcwd(),'results_backup','simplify')
+    tidy_nodes_edges_dfs(edges_df,params, outpath):
