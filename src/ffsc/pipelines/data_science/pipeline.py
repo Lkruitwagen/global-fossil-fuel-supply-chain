@@ -41,6 +41,7 @@ from src.ffsc.nodes import (
     create_processing_plant_graph_component,
     create_power_station_graph_components,
     create_port_pipeline_edges,
+    create_port_railway_edges,
     create_railway_graph_components,
     match_lng_terminals_with_shipping_routes,
     create_coal_mine_graph_components,
@@ -208,6 +209,12 @@ def geomatching_pipeline(**kwargs):
             ),
             node(
                 merge_facility_with_transportation_network_graph,
+                ["prm_railways_data", "prm_ports_data", "parameters"],
+                "prm_ports_matched_with_railways",
+                tags=tags + ["port_railway_matching"],
+            ),
+            node(
+                merge_facility_with_transportation_network_graph,
                 ["prm_pipelines_data", "prm_liquid_natural_gas_data", "parameters"],
                 "prm_liquid_natural_gas_matched_with_pipelines",
                 tags=tags + ["liquid_natural_gas_pipeline_matching"],
@@ -280,6 +287,12 @@ def graph_writing_pipeline(**kwargs):
                 "prm_ports_matched_with_pipelines",
                 "port_pipeline_edge_dataframe",
                 tags=tags + ["port_pipeline_edges"],
+            ),
+            node(
+                create_port_railway_edges,
+                "prm_ports_matched_with_railways",
+                "port_railway_edge_dataframe",
+                tags=tags + ["port_railway_edges"],
             ),
             node(
                 create_pipeline_graph_tables,

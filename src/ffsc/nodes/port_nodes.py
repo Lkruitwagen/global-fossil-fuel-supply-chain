@@ -3,6 +3,7 @@ import pandas as pd
 from shapely import geometry, ops
 from joblib import Parallel, delayed
 from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from src.ffsc.nodes.railways import coord_to_rail_key
 
 from src.ffsc.nodes.utils import preprocess_geodata
 
@@ -117,5 +118,24 @@ def create_port_pipeline_edges(prm_ports_matched_with_pipelines):
     edges = edges.drop("network_coordinates", axis=1)
 
     edges[":TYPE"] = "PORT_PIPELINE_CONNECTOR"
+
+    return edges
+
+
+def create_port_railway_edges(prm_ports_matched_with_railways):
+    edges = prm_ports_matched_with_railways[["item_id", "network_coordinates"]]
+
+    edges = edges.rename({"item_id": "PortNode:START_ID(PortNode)"}, axis=1)
+    edges["PortNode:START_ID(PortNode)"] = edges["PortNode:START_ID(PortNode)"].apply(
+        port_item_to_node_id
+    )
+
+    edges["RailwayNodeID:END_ID(PipelineNode)"] = edges["network_coordinates"].apply(
+        coord_to_rail_key
+    )
+
+    edges = edges.drop("network_coordinates", axis=1)
+
+    edges[":TYPE"] = "PORT_RAILWAY_CONNECTOR"
 
     return edges
