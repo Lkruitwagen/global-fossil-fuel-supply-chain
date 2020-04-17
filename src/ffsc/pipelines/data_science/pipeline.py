@@ -208,6 +208,12 @@ def geomatching_pipeline(**kwargs):
             ),
             node(
                 merge_facility_with_transportation_network_graph,
+                ["prm_railways_data", "prm_ports_data", "parameters"],
+                "prm_ports_matched_with_railways",
+                tags=tags + ["port_railway_matching"],
+            ),
+            node(
+                merge_facility_with_transportation_network_graph,
                 ["prm_pipelines_data", "prm_liquid_natural_gas_data", "parameters"],
                 "prm_liquid_natural_gas_matched_with_pipelines",
                 tags=tags + ["liquid_natural_gas_pipeline_matching"],
