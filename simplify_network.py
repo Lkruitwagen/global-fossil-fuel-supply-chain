@@ -1,4 +1,4 @@
-import logging, os, sys, pickle, time
+import logging, os, sys, pickle, time, glob, json
 
 import networkx as nx
 import pandas as pd
@@ -23,7 +23,8 @@ def gen_keep_nodes(network, params):
                 'oil_field_edge_dataframe.csv'],
     'railway':['cities_railways_edge_dataframe.csv',
                 'coal_mine_railway_edge_dataframe.csv',
-                'power_station_railway_edge_dataframe.csv']
+                'power_station_railway_edge_dataframe.csv',
+                'port_railway_edge_dataframe.csv']
     }
 
     node_columns= {}
@@ -31,9 +32,9 @@ def gen_keep_nodes(network, params):
     keep_nodes = []
 
     for df_name in df_names[network]:
-        df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',df_name))
+        df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','simplify',df_name))
 
-        node_columns = [cc for cc in df.columns if params['colstr'] in cc][0]
+        node_column = [cc for cc in df.columns if params['colstr'] in cc][0]
 
         keep_nodes += df[node_column].unique().tolist()
 
@@ -43,7 +44,7 @@ def gen_keep_nodes(network, params):
 
 
 
-def gen_subgraph_nodes(edges_df, keep_nodes):
+def gen_subgraph_nodes(edges_df, keep_nodes, network):
 
     logger = logging.getLogger(__name__)
     tic = time.time()
@@ -71,7 +72,7 @@ def gen_subgraph_nodes(edges_df, keep_nodes):
 
     # dump the graph object
     logger.info(f'dumping graph nodes... {time.time()-tic:.2f}')
-    pickle.dump(subgraph_nodes, open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'),'wb'))
+    pickle.dump(subgraph_nodes, open(os.path.join(os.getcwd(),'results_backup',network+'_subgraph_nodes.pkl'),'wb'))
 
     return subgraph_nodes
 
@@ -114,22 +115,28 @@ def _worker_simplify_edges(ii_mp, edges_df_path, subgraph_nodes, params, outpath
             # get endpoints of component
             end_pts = {node:val for (node, val) in subgraph.degree() if val==1}
 
-            # get nodes to drop
-            drop_nodes_subgraph = list(g-set(end_pts.keys()))
+            if len(end_pts)==2:
 
-            # create new edge
-            new_dist = sum([e[2]['distance'] for e in subgraph.edges(data=True)])
-            new_edge = {
-                params['node_start_col']:list(end_pts)[0],
-                params['node_end_col']:list(end_pts)[1],
-                ':TYPE':params['TYPE'],
-                'distance':new_dist,
-                'impedance':new_dist**2,
-            }
+                # get nodes to drop
+                drop_nodes_subgraph = list(g-set(end_pts.keys()))
 
-            # add to list collection
-            drop_nodes += drop_nodes_subgraph
-            new_edges += [new_edge]
+                # create new edge
+                new_dist = sum([e[2]['distance'] for e in subgraph.edges(data=True)])
+                new_edge = {
+                    params['node_start_col']:list(end_pts)[0],
+                    params['node_end_col']:list(end_pts)[1],
+                    ':TYPE':params['TYPE'],
+                    'distance':new_dist,
+                    'impedance':new_dist**2,
+                }
+
+                # add to list collection
+                drop_nodes += drop_nodes_subgraph
+                new_edges += [new_edge]
+            else:
+                print ('ERROR!', len(end_pts))
+                print (subgraph.edges())
+                print (subgraph.degree())
 
     logger.info(f'dumping to pickle... {time.time()-tic:.2f}')
     pickle.dump(drop_nodes, open(os.path.join(outpath,str(ii_mp)+'_drop_nodes.pkl'),'wb'))
@@ -155,13 +162,11 @@ def mp_simplify_graph(subgraph_nodes, pkl_path):
 
     print (results)
 
-def tidy_nodes_edges_dfs(edges_df,params, outpath):
+def tidy_nodes_edges_dfs(edges_df,nodes_df,params, outpath):
 
     logger.info(f'loading drop nodes and new edges ...')
     drop_node_files = glob.glob(os.path.join(params['pkl_path'],'*_drop_nodes.pkl'))
     new_edge_files = glob.glob(os.path.join(params['pkl_path'],'*_new_edges.pkl'))
-    print (drop_node_files)
-    print (new_edge_files)
 
     new_edges = []
     for f in new_edge_files:
@@ -170,35 +175,46 @@ def tidy_nodes_edges_dfs(edges_df,params, outpath):
     for f in drop_node_files:
         drop_nodes += pickle.load(open(f,'rb'))
 
+
     new_edges = pd.DataFrame(new_edges)
+    new_edges[params['node_start_col']] = new_edges[params['node_start_col']]
+    new_edges[params['node_end_col']] = new_edges[params['node_end_col']]
+
+    print ('len new edges',len(new_edges))
+    print ('sum r',(new_edges[params['node_start_col']]=='r').sum())
 
     
     logger.info(f'collecting drop edges...')
     drop_edge_index = edges_df[params['node_start_col']].isin(drop_nodes).values \
     + edges_df[params['node_end_col']].isin(drop_nodes).values
     
+    drop_nodes = [node.strip() for node in drop_nodes]
     logger.info(f'adding {len(new_edges)} new edges, dropping {len(drop_nodes)} nodes ...')
     #print (dfs['pipeline_edge_dataframe'][edge_index])
     
     edges_df.drop(index=edges_df[drop_edge_index].index, inplace=True)
-    edges_df.drop(index=drop_nodes, inplace=True)
     edges_df = edges_df.append(new_edges, ignore_index=True)#
+
+    nodes_df.drop(index=drop_nodes, inplace=True)
 
     logger.info(f'Writing to disk ...')
     edges_df.to_csv(os.path.join(outpath, params['fname_edges']))
+    nodes_df.to_csv(os.path.join(outpath, params['fname_nodes']))
 
 
 
 if __name__=="__main__":
 
-    RUN = 'pipeline'
+    RUN = 'railway'
 
     if RUN=='pipeline':
         params = {
             'node_start_col':'StartNodeId:START_ID(PipelineNode)',
             'node_end_col':'EndNodeId:END_ID(PipelineNode)',
+            'node_index_col':'PipeNodeID:ID(PipelineNode)',
             'TYPE':'PIPELINE_CONNECTION',
             'fname_edges':'pipeline_edge_dataframe.csv',
+            'fname_nodes':'pipeline_node_dataframe.csv',
             'pkl_path':os.path.join(os.getcwd(),'results_backup','pipeline_simplify'),
             'colstr':'PipelineNode',
         }
@@ -206,25 +222,31 @@ if __name__=="__main__":
         params = {
             'node_start_col':'StartNodeId:START_ID(RailwayNode)',
             'node_end_col':'EndNodeId:END_ID(RailwayNode)',
+            'node_index_col':'RailwayNodeID:ID(RailwayNode)',
             'TYPE':'RAILWAY_CONNECTION',
             'fname_edges':'railway_edge_dataframe.csv',
-            'pkl_path':os.path.join(os.getcwd(),'results_backup','railways_simplify'),
+            'fname_nodes':'railway_nodes_dataframe.csv',
+            'pkl_path':os.path.join(os.getcwd(),'results_backup','railway_simplify'),
             'colstr':'RailwayNode',
         }
 
     logger.info(f'getting keep_nodes. {time.time()-tic:.2f} ...')
-    #keep_nodes = gen_keep_nodes('pipeline',params)
+    #keep_nodes = gen_keep_nodes(RUN,params)
 
     logger.info(f'got keep_nodes. {time.time()-tic:.2f} loading edges df ...')
     edges_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_edges']))
 
+    logger.info(f'got keep_nodes. {time.time()-tic:.2f} loading nodes df ...')
+    nodes_df = pd.read_csv(os.path.join(os.getcwd(),'results_backup','output',params['fname_nodes']))
+    nodes_df.set_index(params['node_index_col'], inplace=True)
+
     logger.info(f'got edges df. {time.time()-tic:.2f} getting subgraph nodes ...')
-    #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes)
-    subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup','subgraph_nodes.pkl'),'rb'))
+    #subgraph_nodes = gen_subgraph_nodes(edges_df, keep_nodes, RUN)
+    # subgraph_nodes = pickle.load(open(os.path.join(os.getcwd(),'results_backup',RUN+'_subgraph_nodes.pkl'),'rb'))
 
     logger.info(f'got subgraph nodes. {time.time()-tic:.2f} running mp simplify ...')
-    # mp_simplify_graph(subgraph_nodes, params['pkl_path'])
+    #mp_simplify_graph(subgraph_nodes, params['pkl_path'])
 
     logger.info(f'tidying edge and node df {time.time()-tic:.2f}')
     outpath = os.path.join(os.getcwd(),'results_backup','simplify')
-    tidy_nodes_edges_dfs(edges_df,params, outpath):
+    tidy_nodes_edges_dfs(edges_df,nodes_df,params, outpath)

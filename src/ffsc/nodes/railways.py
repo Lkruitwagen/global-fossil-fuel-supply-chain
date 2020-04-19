@@ -17,7 +17,7 @@ from typing import List, AnyStr
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 import multiprocessing as mp
-NPARTITIONS=mp.cpu_count()//2
+NPARTITIONS=mp.cpu_count()//4
 
 ### I think you do need this...
 from dask.distributed import Client
