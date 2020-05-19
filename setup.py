@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-entry_point = "ffsc = ffsc.run:run_package"
+entry_point = "ffsc = ffsc.pipeline.run:run_package"
 
 
 # get the dependencies and installs

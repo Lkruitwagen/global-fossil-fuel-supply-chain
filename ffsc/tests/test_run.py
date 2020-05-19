@@ -39,7 +39,7 @@ from pathlib import Path
 
 import pytest
 
-from src.ffsc.run import ProjectContext
+from ffsc.pipeline.run import ProjectContext
 
 
 @pytest.fixture
