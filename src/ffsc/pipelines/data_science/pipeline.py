@@ -41,6 +41,7 @@ from src.ffsc.nodes import (
     create_processing_plant_graph_component,
     create_power_station_graph_components,
     create_port_pipeline_edges,
+    create_port_railway_edges,
     create_railway_graph_components,
     match_lng_terminals_with_shipping_routes,
     create_coal_mine_graph_components,
@@ -286,6 +287,12 @@ def graph_writing_pipeline(**kwargs):
                 "prm_ports_matched_with_pipelines",
                 "port_pipeline_edge_dataframe",
                 tags=tags + ["port_pipeline_edges"],
+            ),
+            node(
+                create_port_railway_edges,
+                "prm_ports_matched_with_railways",
+                "port_railway_edge_dataframe",
+                tags=tags + ["port_railway_edges"],
             ),
             node(
                 create_pipeline_graph_tables,

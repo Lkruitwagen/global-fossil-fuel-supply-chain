@@ -5,6 +5,7 @@ from .port_nodes import (
     create_port_node_table,
     create_port_ship_edges,
     create_port_pipeline_edges,
+    create_port_railway_edges,
 )
 from .graph_parsing import create_sample_graph
 
