@@ -1,9 +1,9 @@
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,
 )
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 
 
 def preprocess_processing_plants_data(data):

@@ -2,11 +2,11 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point, MultiPoint
 from typing import Dict, SupportsInt, AnyStr, Tuple
-from src.ffsc.nodes.utils import flatten_list_of_lists
+from ffsc.pipeline.nodes.utils import flatten_list_of_lists
 
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,

@@ -1,6 +1,6 @@
-from src.ffsc.nodes.intersections import find_intersecting_points
-from src.ffsc.nodes.utils.geo_json_utils import preprocess_geodata
-from src.ffsc.nodes.utils import calculate_havesine_distance
+from ffsc.pipeline.nodes.intersections import find_intersecting_points
+from ffsc.pipeline.nodes.utils.geo_json_utils import preprocess_geodata
+from ffsc.pipeline.nodes.utils import calculate_havesine_distance
 from shapely import geometry, ops
 import pandas as pd
 import numpy as np
@@ -21,7 +21,7 @@ client.cluster
 import dask.dataframe as dd
 
 
-from src.ffsc.nodes.utils import unique_nodes_from_segments, convert_segments_to_lines
+from ffsc.pipeline.nodes.utils import unique_nodes_from_segments, convert_segments_to_lines
 
 
 def preprocess_pipeline_data_int(raw_pipelines_data):
