@@ -76,6 +76,7 @@ edit `./etc/conda/activate.d/env_vars.sh` as follows:
     #!/bin/sh
     export USE_PYGEOS=1
     export PYTHONPATH=~/path/to/repo/global-fossil-fuel-supply-chain
+    export NUMEXPR_MAX_THREADS=24 # or something suiting your resources
 
 Leave `<YOURPASSWORD>` blank if you haven't password protected your database (default).
 
