@@ -1,3 +1,5 @@
+import logging, sys, time
+
 from src.ffsc.nodes.intersections import find_intersecting_points
 from src.ffsc.nodes.utils import (
     preprocess_geodata,
@@ -11,6 +13,19 @@ import pandas as pd
 import geopandas as gpd
 from shapely import geometry
 from typing import List, AnyStr
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+import multiprocessing as mp
+NPARTITIONS=mp.cpu_count()//4
+
+### I think you do need this...
+from dask.distributed import Client
+client = Client(n_workers=NPARTITIONS)
+client.cluster
+
+import dask.dataframe as dd
+
 
 
 def preprocess_railway_data_int(data):
@@ -35,44 +50,70 @@ def preprocess_railway_data_int(data):
 
 
 def preprocess_railway_data_prm(int_railways, parameters):
-    railway_df = (
-        int_railways[["railway_id", "geometry_type", "coordinates"]]
-        .apply(
-            lambda row: pd.Series(row["coordinates"])
-            if row["geometry_type"] == "MultiLineString"
-            else pd.Series([list(row["coordinates"])]),
-            axis=1,
-        )
-        .stack()
-        .reset_index()
-        .drop(columns=["level_1"])
-        .rename(columns={"level_0": "railway_id", 0: "coordinates"})
-        .reset_index()
-        .rename(columns={"index": "railway_segment_id"})
-    )
-    railway_df = railway_df.merge(
-        int_railways[["railway_id", "md_region", "md_country"]], on="railway_id"
-    )
-    railway_df["railway_object"] = railway_df["coordinates"].apply(geometry.LineString)
-
+    logger = logging.getLogger(__name__)
+    tic = time.time()
+    
+    def _nest_coords(row):
+        if row['geometry_type']=='MultiLineString':
+            return row['coordinates']
+        else:
+            return [list(row['coordinates'])]
+        
+    # nest any LineStrings to [[[],[]]]
+    logger.info(f'nesting coordinates {time.time()-tic}')
+    int_railways['coordinates'] = int_railways.apply(lambda row: _nest_coords(row), axis=1)
+    logger.info(f'{int_railways["coordinates"].str.len().unique()}')
+    logger.info(f'nesting coordinates {time.time()-tic}')
+    
+    
+    #explode along coordinates
+    logger.info(f'exploding df {time.time()-tic}')
+    railway_df = int_railways.explode('coordinates')
+    railway_df['railway_segment_id'] = railway_df.index
+    logger.info(f'{railway_df["coordinates"].str.len().unique()}')
+    logger.info(f'exploded df {time.time()-tic}')
+    
+    
+    # get the missing region
+    logger.info(f'get missing regions {time.time()-tic}')
     railway_missing_region_df = railway_df.loc[railway_df.md_region.isna()].copy()
-
-    railway_missing_region_gdf = gpd.GeoDataFrame(
-        railway_missing_region_df, geometry=railway_missing_region_df["railway_object"]
-    )
-
+    logger.info(f'get missing regions {time.time()-tic}')
+    
+    # cast to dask dataframe
+    logger.info(f'cast to dask {time.time()-tic}')
+    ddf = dd.from_pandas(railway_missing_region_df, npartitions=NPARTITIONS)
+    logger.info(f'cast to dask {time.time()-tic}')
+    
+    # load NE
+    logger.info(f'get world gdf {time.time()-tic}')
     world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-    world["buffered_geometry"] = world.geometry.geometry.buffer(10)
+    world.geometry = world.geometry.geometry.buffer(10)
+    logger.info(f'get world gdf {time.time()-tic}')
+    
+    ### parallelise sjoin in Dask
+    
+    # define meta dataframe
+    logger.info(f'get meta {time.time()-tic}')
+    meta = pd.DataFrame(columns=['railway_id','name','continent'])
+    meta.railway_id = meta.railway_id.astype(int)
+    meta.name = meta.name.astype('str')
+    meta.continent = meta.continent.astype('str')
+    logger.info(f'get meta {time.time()-tic}')
+    
+    def dask_sjoin(df, obj_col):
 
-    retrieved_region_gdf = gpd.sjoin(
-        railway_missing_region_gdf,
-        gpd.GeoDataFrame(
-            world[["name", "continent"]], geometry=world["buffered_geometry"]
-        ),
-        how="left",
-        op="intersects",
-    )
+        df[obj_col] = df["coordinates"].apply(geometry.LineString)
+        gdf = gpd.GeoDataFrame(df, geometry=df[obj_col], crs={'init':'epsg:4326'})
+        gdf = gpd.sjoin(gdf, world[['name','continent','geometry']], how='left',op='intersects')
 
+        return pd.DataFrame(gdf[['railway_id','name','continent']])
+    
+    logger.info(f'map regions on dask {time.time()-tic}')
+    retrieved_region_df = ddf.map_partitions(dask_sjoin,'railway_object', meta=meta).compute()
+    logger.info(f'map regions on dask {time.time()-tic}')
+    #client.restart()
+    
+    logger.info(f'regions reset {time.time()-tic}')
     region_dict = {
         "Oceania": "Australia and Oceania",
         "Africa": "Africa",
@@ -82,14 +123,14 @@ def preprocess_railway_data_prm(int_railways, parameters):
         "Europe": "Europe",
     }
 
-    retrieved_region_gdf["retrieved_region"] = retrieved_region_gdf.continent.map(
+    retrieved_region_df["retrieved_region"] = retrieved_region_df.continent.map(
         region_dict
     )
 
-    retrieved_region_gdf.loc[
-        retrieved_region_gdf.retrieved_region == "Asia", "retrieved_region"
-    ] = retrieved_region_gdf.loc[
-        retrieved_region_gdf.retrieved_region == "Asia", "name"
+    retrieved_region_df.loc[
+        retrieved_region_df.retrieved_region == "Asia", "retrieved_region"
+    ] = retrieved_region_df.loc[
+        retrieved_region_df.retrieved_region == "Asia", "name"
     ].apply(
         lambda x: "Middle East"
         if x
@@ -109,37 +150,51 @@ def preprocess_railway_data_prm(int_railways, parameters):
         else "Asia"
     )
 
-    retrieved_region_gdf.dropna(subset=["retrieved_region"], inplace=True)
+    retrieved_region_df.dropna(subset=["retrieved_region"], inplace=True)
 
-    retrieved_region_gdf = (
-        retrieved_region_gdf.drop_duplicates(subset=["railway_id", "retrieved_region"])
+    retrieved_region_df = (
+        retrieved_region_df.drop_duplicates(subset=["railway_id", "retrieved_region"])
         .sort_values(["railway_id", "retrieved_region"])
         .groupby("railway_id")
         .retrieved_region.apply(lambda x: "; ".join(x.tolist()))
         .reset_index()
     )
+    logger.info(f'regions reset {time.time()-tic}')
 
-    railway_df = railway_df.merge(retrieved_region_gdf, how="left", on="railway_id")
+    
+    logger.info(f'merge back to main df {time.time()-tic}')
+    railway_df = railway_df.merge(retrieved_region_df, how="left", on="railway_id")
 
     railway_df.loc[:, "md_region"] = railway_df.loc[:, "md_region"].fillna(
         railway_df.loc[:, "retrieved_region"]
     )
 
     railway_df.drop(columns=["retrieved_region"], inplace=True)
+    logger.info(f'merge back to main df {time.time()-tic}')
+    
+    # drop the regionless orphans
+    railway_df.dropna(subset=['md_region'], inplace=True)
 
-    # railway_df.dropna(subset=['md_region'], inplace=True)
+    logger.info(f'making geometry column {time.time()-tic}')
+    railway_df['railway_object'] = railway_df.coordinates.apply(geometry.LineString)
+    logger.info(f'making geometry column {time.time()-tic}')
 
-    prm_railways_data = (
-        railway_df.loc[railway_df.md_region.notnull()]
-        .groupby("md_region")
-        .apply(
-            find_intersecting_points,
-            parameters=parameters,
-            object_column="railway_object",
-            entity_ids=["railway_id", "railway_segment_id"],
-        )
-        .reset_index()
-    )
+    logger.info(f'making new ddf {time.time()-tic}')
+    ddf = dd.from_pandas(railway_df, npartitions=NPARTITIONS) # bring this from parameters in the future
+
+    logger.info(f'making new ddf {time.time()-tic}')
+    meta= pd.DataFrame({'railway_id': [1], 'railway_segment_id': [2], 'snapped_geometry':['str']})
+    
+
+
+    logger.info(f'calling groupby md_region{time.time()-tic}')
+    prm_railways_data = ddf.groupby(['md_region']) \
+                            .apply(find_intersecting_points, 
+                                    parameters, 
+                                    'railway_object',
+                                    ['railway_id','railway_segment_id'], 
+                                    meta=meta) \
+                            .compute()
 
     prm_railways_data = prm_railways_data[
         ["railway_segment_id", "railway_id", "snapped_geometry"]

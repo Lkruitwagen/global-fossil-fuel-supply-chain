@@ -142,4 +142,4 @@ def find_intersecting_points(
         axis=1,
     )
 
-    return intersecting_points
+    return intersecting_points[entity_ids + ['snapped_geometry']]
