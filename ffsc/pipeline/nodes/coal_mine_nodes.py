@@ -1,11 +1,11 @@
 import pandas as pd
 from typing import Dict, SupportsInt, AnyStr, Tuple
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,
 )
-from src.ffsc.nodes.railways import coord_to_rail_key
+from ffsc.pipeline.nodes.railways import coord_to_rail_key
 
 
 def preprocess_coal_mine_data(data: Dict) -> pd.DataFrame:

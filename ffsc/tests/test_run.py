@@ -26,38 +26,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Construction of the master pipeline.
 """
+This module contains an example test.
 
-from typing import Dict
-from kedro.pipeline import Pipeline
+Tests should be placed in ``src/tests``, in modules that mirror your
+project's structure, and in files named test_*.py. They are simply functions
+named ``test_*`` which test a unit of logic.
+
+To run the tests, run ``kedro test``.
+"""
+from pathlib import Path
+
+import pytest
+
+from ffsc.pipeline.run import ProjectContext
 
 
-###########################################################################
-# Here you can find an example pipeline, made of two modular pipelines.
-#
-# Delete this when you start working on your own Kedro project as
-# well as pipelines/data_science AND pipelines/data_engineering
-# -------------------------------------------------------------------------
-
-from src.ffsc.pipelines.data_science import pipeline as ds
+@pytest.fixture
+def project_context():
+    return ProjectContext(str(Path.cwd()))
 
 
-def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
-    """Create the project's pipeline.
+class TestProjectContext:
+    def test_project_name(self, project_context):
+        assert project_context.project_name == "FFSC"
 
-    Args:
-        kwargs: Ignore any additional arguments added in the future.
-
-    Returns:
-        A mapping from a pipeline name to a ``Pipeline`` object.
-
-    """
-
-    data_science_pipeline = (
-        ds.preprocess_pipeline()
-        + ds.geomatching_pipeline()
-        + ds.graph_writing_pipeline()
-    )
-
-    return {"ds": data_science_pipeline, "__default__": data_science_pipeline}
+    def test_project_version(self, project_context):
+        assert project_context.project_version == "0.15.7"

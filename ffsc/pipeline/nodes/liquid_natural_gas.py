@@ -2,13 +2,13 @@ import pandas as pd
 from shapely import geometry, ops
 from joblib import Parallel, delayed
 
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,
 )
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
-from src.ffsc.nodes.shipping_nodes import shipping_node_item_to_node_id
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.shipping_nodes import shipping_node_item_to_node_id
 
 
 def preprocess_lng_data(data):

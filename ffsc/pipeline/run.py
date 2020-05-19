@@ -5,7 +5,7 @@ from typing import Dict
 from kedro.context import KedroContext, load_context
 from kedro.pipeline import Pipeline
 
-from src.ffsc.pipeline import create_pipelines
+from ffsc.pipeline.pipeline import create_pipelines
 
 
 class ProjectContext(KedroContext):

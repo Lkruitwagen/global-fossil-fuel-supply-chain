@@ -1,7 +1,7 @@
 import logging, sys, time
 
-from src.ffsc.nodes.intersections import find_intersecting_points
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.intersections import find_intersecting_points
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     unique_nodes_from_segments,
     convert_segments_to_lines,

@@ -4,9 +4,9 @@ import geopandas as gpd
 from joblib import Parallel, delayed
 import pandas as pd
 import numpy as np
-from src.ffsc.nodes.port_nodes import port_item_to_node_id
-from src.ffsc.nodes.railways import coord_to_rail_key
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.port_nodes import port_item_to_node_id
+from ffsc.pipeline.nodes.railways import coord_to_rail_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 
 
 def preprocess_city_data_int(raw_cities_energy_data, raw_cities_euclidean_data):

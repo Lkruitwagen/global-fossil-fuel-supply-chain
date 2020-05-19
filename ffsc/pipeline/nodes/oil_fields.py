@@ -1,13 +1,13 @@
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon, Point
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,
     unique_nodes_from_segments,
 )
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 
 
 def preprocess_oil_field_data(data):

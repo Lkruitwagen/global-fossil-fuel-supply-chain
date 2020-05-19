@@ -1,13 +1,13 @@
 import pandas as pd
 from shapely import geometry
 
-from ffsc.nodes.utils.geomatching_utils import geodesic_point_buffer
-from src.ffsc.nodes.utils import (
+from ffsc.pipeline.nodes.utils.geomatching_utils import geodesic_point_buffer
+from ffsc.pipeline.nodes.utils import (
     preprocess_geodata,
     create_nodes,
     create_edges_for_network_connections,
 )
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 
 
 def preprocess_well_pads_data(data):

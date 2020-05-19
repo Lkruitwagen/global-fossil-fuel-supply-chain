@@ -7,62 +7,62 @@ raw_shipping_routes_data:
   filepath: data/assets/shipping_routes.geojson
 
 raw_ports_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/ports.geojson
   encoding: "ISO-8859-1"
 
 raw_pipelines_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/pipelines.geojson
   encoding: "ISO-8859-1"
 
 raw_coal_mines_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/coal_mines.geojson
   encoding: "ISO-8859-1"
 
 raw_oil_field_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/fields.geojson
   encoding: "ISO-8859-1"
 
 raw_liquid_natural_gas_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/lng.geojson
   encoding: "ISO-8859-1"
 
 raw_power_stations_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/power_stations.geojson
   encoding: "ISO-8859-1"
 
 raw_processing_plants_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/processing_plants.geojson
   encoding: "ISO-8859-1"
 
 raw_railways_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/railways.geojson
   encoding: "ISO-8859-1"
 
 raw_refineries_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/refineries.geojson
   encoding: "ISO-8859-1"
 
 raw_well_pads_data:
-  type: ffsc.datasets.JSONLocalDataSet
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
   filepath: data/assets/well_pads.geojson
   encoding: "ISO-8859-1"
 
 raw_cities_energy_data:
-  type: ffsc.datasets.GPKGDataSet
+  type: ffsc.pipeline.datasets.GPKGDataSet
   dirpath: data/GHSL_UCDB_ENERGY
   filelistpath: data/iso2.csv
 
 raw_cities_euclidean_data:
-  type: ffsc.datasets.GPKGDataSet
+  type: ffsc.pipeline.datasets.GPKGDataSet
   dirpath: data/GHSL_UCDB_ENERGY
   filelistpath: data/iso2.csv
 

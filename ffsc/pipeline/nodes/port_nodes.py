@@ -2,12 +2,12 @@ import pandas as pd
 
 from shapely import geometry, ops
 from joblib import Parallel, delayed
-from src.ffsc.nodes.pipeline_nodes import coord_to_pipe_key
-from src.ffsc.nodes.railways import coord_to_rail_key
+from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.railways import coord_to_rail_key
 
-from src.ffsc.nodes.utils import preprocess_geodata
+from ffsc.pipeline.nodes.utils import preprocess_geodata
 
-from src.ffsc.nodes.shipping_nodes import shipping_node_item_to_node_id
+from ffsc.pipeline.nodes.shipping_nodes import shipping_node_item_to_node_id
 
 
 def preprocess_port_data(data):
