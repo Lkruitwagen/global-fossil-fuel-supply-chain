@@ -103,7 +103,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
     def dask_sjoin(df, obj_col):
 
         df[obj_col] = df["coordinates"].apply(geometry.LineString)
-        gdf = gpd.GeoDataFrame(df, geometry=df[obj_col], crs={'init':'epsg:4326'})
+        gdf = gpd.GeoDataFrame(df, geometry=df[obj_col], crs='epsg:4326')
         gdf = gpd.sjoin(gdf, world[['name','continent','geometry']], how='left',op='intersects')
 
         return pd.DataFrame(gdf[['railway_id','name','continent']])
