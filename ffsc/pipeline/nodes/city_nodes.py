@@ -7,19 +7,26 @@ import numpy as np
 from ffsc.pipeline.nodes.port_nodes import port_item_to_node_id
 from ffsc.pipeline.nodes.railways import coord_to_rail_key
 from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
+from ffsc.pipeline.nodes.utils import preprocess_geodata
 
 
 def preprocess_city_data_int(raw_cities_energy_data, raw_cities_euclidean_data):
-    left_columns = set(raw_cities_energy_data.columns)
-    right_columns = set(raw_cities_euclidean_data.columns)
+    
+    
+    cities_energy_df = preprocess_geodata(raw_cities_energy_data)
+    cities_euclid_df = preprocess_geodata(raw_cities_euclidean_data)
+    
+    
+    left_columns = set(cities_energy_df.columns)
+    right_columns = set(cities_euclid_df.columns)
     common_columns = left_columns.intersection(right_columns)
     left_columns = left_columns.difference(common_columns)
     right_columns = right_columns.difference(common_columns)
 
     output_df = (
-        raw_cities_energy_data[list(left_columns.union(common_columns))]
+        cities_energy_df[list(left_columns.union(common_columns))]
         .merge(
-            raw_cities_euclidean_data[right_columns],
+            cities_euclid_df[right_columns],
             left_index=True,
             right_index=True,
             how="inner",
