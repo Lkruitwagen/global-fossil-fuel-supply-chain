@@ -5,8 +5,8 @@ import pandas as pd
 from math import pi
 import numpy as np
 
-from recipes import recipes
-from simplex import network_simplex
+from .recipes import recipes
+from .simplex import network_simplex
 
 logger=logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
