@@ -68,101 +68,129 @@ def merge_facility_with_transportation_network_graph(
 
     facility_data["geometry"] = facility_data.coordinates.apply(Point)
     
+    facility_data = gpd.GeoDataFrame(facility_data, geometry=facility_data['geometry'], crs='epsg:4326')
+    facility_data.geometry = facility_data.geometry.to_crs('epsg:3395')
+    facility_data['3395_x'] = facility_data.geometry.x
+    facility_data['3395_y'] = facility_data.geometry.y
+    
     logger.info(f't_f - {time.time()-tic:.1f} - Coordinate manipulation')
     
 
-    logger.info(f't_s - {time.time()-tic:.1f} - Point buffering on Dask')
+    #logger.info(f't_s - {time.time()-tic:.1f} - Point buffering on Dask')
     
     #ddf = dd.from_pandas(pipeline_df, npartitions=NPARTITIONS) # bring this from parameters in the future
 
     #meta= pd.DataFrame({'pipeline_id': [1], 'pipeline_segment_id': [2], 'snapped_geometry':['str']})
-    meta=pd.Series({'geometry':['str']})
+    #meta=pd.Series({'geometry':['str']})
     
-    def df_buffer(df,distance):
-        return df['geometry'].apply(lambda x: geodesic_point_buffer(x.y, x.x, distance))
+    #def df_buffer(df,distance):
+    #    return df['geometry'].apply(lambda x: geodesic_point_buffer(x.y, x.x, distance))
     
-    facility_data['geometry'] = client.compute(dd.from_pandas(facility_data,npartitions=NPARTITIONS*4).map_partitions(
-        df_buffer,
-        parameters['max_geo_matching_distance'],
-        meta=meta)).result()#.compute()
+    #facility_data['geometry'] = client.compute(dd.from_pandas(facility_data,npartitions=NPARTITIONS).map_partitions(
+    #    df_buffer,
+    #    parameters['max_geo_matching_distance'],
+    #    meta=meta)).result()#.compute()
     #client.restart()
     
     
-    logger.info(f't_f - {time.time()-tic:.1f} - Point buffering on Dask')
+    #logger.info(f't_f - {time.time()-tic:.1f} - Point buffering on Dask')
     
     logger.info(f't_s - {time.time()-tic:.1f} - Segment Reduction')
 
-    #unique_nodes = unique_nodes_from_segments(network_data.snapped_geometry)
-    meta = pd.Series({'snapped_geometry':[list]})
-    def dfLStocoordlist(df):
-        return df.snapped_geometry.apply(lambda x: list(x.coords))
+    unique_nodes = unique_nodes_from_segments(network_data.snapped_geometry)
+    #meta = pd.Series({'snapped_geometry':[list]})
+    #def dfLStocoordlist(df):
+    #    return df.snapped_geometry.apply(lambda x: list(x.coords))
     
-    unique_nodes = client.compute(dd.from_pandas(network_data, npartitions=NPARTITIONS*4).map_partitions(
-        dfLStocoordlist,
-        meta=meta)).result()
-    logger.info(f't_f - {time.time()-tic:.1f} - Exploding...')
-    unique_nodes = unique_nodes.explode().unique().tolist()
-    logger.info(f'len unique_nodes {len(unique_nodes)}, {time.time()-tic:.1f}')
+    #unique_nodes = client.compute(dd.from_pandas(network_data, npartitions=NPARTITIONS).map_partitions(
+    #    dfLStocoordlist,
+    #    meta=meta)).result()
+    #unique_nodes = unique_nodes.explode().unique().tolist()
+    #logger.info(f'len unique_nodes {len(unique_nodes)}, {time.time()-tic:.1f}')
     
     logger.info(f't_f - {time.time()-tic:.1f} - Segment Reduction')
     
     logger.info(f't_s - {time.time()-tic:.1f} - Preparing Join')
     
-    logger.info(f't_s - {time.time()-tic:.1f} - Mapping Geometries')
-    
     
 
     node_df = pd.DataFrame()
     node_df["coordinates"] = unique_nodes
-
+    node_df['geometry'] = node_df['coordinates'].apply(Point)
+    logger.info(f't_s - {time.time()-tic:.1f} - Mapping Geometries')
     
-    meta = pd.Series({'geometry':['str']})
-    node_df['geometry'] = client.compute(dd.from_pandas(node_df, npartitions=NPARTITIONS*4).map_partitions(lambda df: df['coordinates'].apply(Point), meta=meta)).result()#.compute()
+    #meta = pd.Series({'geometry':['str']})
+    #node_df['geometry'] = client.compute(dd.from_pandas(node_df, npartitions=NPARTITIONS).apply(lambda row: Point(row['coordinates']), meta=meta, axis=1)).result()#.compute()
     #node_df['geometry'] = node_df['coordinates'].apply(Point)
     
     #geo_refineries = gpd.GeoDataFrame(facility_data)
-    #geo_pipelines = gpd.GeoDataFrame(node_df)
     
-    logger.info(f't_f - {time.time()-tic:.1f} - Mapped geometries')
+    meta = node_df.iloc[0:2,:]
+    meta['3995_x'] = 1.
+    meta['3995_y'] = 1.
     
-    
-    def dask_sjoin(df, net_fut):
-        # df = facility_df
-        # df['geometry'] = df["coordinates"].apply(Point)c
-        network_gdf = net_fut#.result()
-        network_gdf = gpd.GeoDataFrame(network_gdf, geometry=network_gdf['geometry'], crs='epsg:4326')
+    def convert_nodes(df):
         gdf = gpd.GeoDataFrame(df, geometry=df['geometry'], crs='epsg:4326')
-        gdf = gpd.sjoin(gdf, network_gdf, how='inner',op='contains')
-
+        gdf = gdf.to_crs('epsg:3395')
+        gdf['3395_x'] = gdf.geometry.x
+        gdf['3395_y'] = gdf.geometry.y
         return pd.DataFrame(gdf)
     
-    meta = facility_data.iloc[0:2,:]
-    meta['coordinates_right']=list
-    meta = meta.rename(columns={'coordinates':'coordinates_left'})
     
-    # this takes a long time and is single threaded, but all seems to work.
-    [net_fut] = client.scatter([node_df], broadcast=True)
+    # https://stackoverflow.com/questions/41471248/how-to-efficiently-submit-tasks-with-large-arguments-in-dask-distributed
     
-    logger.info(f'spatial join on dask {time.time()-tic}')
-    matched = client.compute(dd.from_pandas(facility_data, npartitions=NPARTITIONS*4).map_partitions(
-        dask_sjoin,
-        net_fut,
-        meta=meta)).result()#.compute()
+    node_df = client.compute(dd.from_pandas(node_df, npartitions=NPARTITIONS).map_partitions(convert_nodes, meta=meta)).result()#.compute()
+    
+    logger.info(f't_f - {time.time()-tic:.1f} - Mapped geometries')
+    logger.info(f't_f - {time.time()-tic:.1f} - buffering intersection')
+    
+    [ndf_fut] = client.scatter([node_df])
+    
+    def buffered_nodes(row, ndf_fut):
+        indices = ((ndf_fut['3395_x']-row['3395_x'])**2 + (ndf_fut['3395_y']-row['3395_y'])**2)**(1/2) <= parameters['max_geo_matching_distance']
+        return ndf_fut.loc[indices,'coordinates'].values.tolist()
+    
+    facility_data['network_coordinates'] = client.compute(
+        dd.from_pandas(
+            facility_data, npartitions=NPARTITIONS) \
+          .apply(buffered_nodes,args=(ndf_fut,), axis=1, meta=pd.Series({'network_coordinates':list}))).result()
+                                                          
+    matched = facility_data[facility_data['network_coordinates'].str.len()>0]
+    matched = matched.explode('network_coordinates').rename(columns={'coordinates':'facility_coordinates'})
+    
+    
+    #def dask_sjoin(df, network_gdf):
+    #    # df = facility_df
+    #    # df['geometry'] = df["coordinates"].apply(Point)
+    #    gdf = gpd.GeoDataFrame(df, geometry=df['geometry'], crs='epsg:4326')
+    #    gdf = gpd.sjoin(gdf, network_gdf, how='inner',op='contains')
+    #
+    #   return pd.DataFrame(gdf)
+    
+    #meta = facility_data.iloc[0:2,:]
+    #meta['coordinates_right']=list
+    #meta = meta.rename(columns={'coordinates':'coordinates_left'})
+    
+    #logger.info(f'spatial join on dask {time.time()-tic}')
+    #matched = client.compute(dd.from_pandas(facility_data, npartitions=NPARTITIONS).map_partitions(
+    #    dask_sjoin,
+    #    geo_pipelines,
+    #    meta=meta)).result()#.compute()
     #client.restart()
     
-    logger.info(f'spatial join on dask {time.time()-tic}')
+    #logger.info(f'spatial join on dask {time.time()-tic}')
     
     #matched = gpd.sjoin(geo_refineries, geo_pipelines, op="contains", how="inner")
 
     #matched = pd.DataFrame(matched)
 
-    matched = matched.rename(
-        {
-            "coordinates_left": "facility_coordinates",
-            "coordinates_right": "network_coordinates",
-        },
-        axis=1,
-    )
+    #matched = matched.rename(
+    #    {
+    #        "coordinates_left": "facility_coordinates",
+    #        "coordinates_right": "network_coordinates",
+    #    },
+    #    axis=1,
+    #)
     logger.info(f't_f - {time.time()-tic:.1f} - Done Join')
 
     return matched

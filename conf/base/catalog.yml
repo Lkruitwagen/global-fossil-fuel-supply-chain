@@ -57,14 +57,14 @@ raw_well_pads_data:
   encoding: "ISO-8859-1"
 
 raw_cities_energy_data:
-  type: ffsc.pipeline.datasets.GPKGDataSet
-  dirpath: data/GHSL_UCDB_ENERGY
-  filelistpath: data/iso2.csv
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  filepath: data/assets/cities_energy.geojson
+  encoding: "ISO-8859-1"
 
 raw_cities_euclidean_data:
-  type: ffsc.pipeline.datasets.GPKGDataSet
-  dirpath: data/GHSL_UCDB_ENERGY
-  filelistpath: data/iso2.csv
+  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  filepath: data/assets/cities_euclid.geojson
+  encoding: "ISO-8859-1"
 
 ##################################################
 ## INTERMEDIATE LAYER

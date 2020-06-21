@@ -1,3 +1,4 @@
+import logging, time
 import pandas as pd
 
 from shapely import geometry, ops
@@ -18,6 +19,10 @@ def preprocess_port_data(data):
 
 
 def match_ports_with_shipping_routes(ports, prm_shipping_routes_data, parameters):
+    logger = logging.getLogger(__name__+'.match_ports-shipping')
+    tic = time.time()
+    
+    logger.info(f'Assembling Dataframes {time.time()-tic}')
     starts = pd.DataFrame()
     starts["node_id"] = prm_shipping_routes_data["From Node0"]
     starts["coordinate"] = prm_shipping_routes_data["starting_point"]
@@ -30,6 +35,7 @@ def match_ports_with_shipping_routes(ports, prm_shipping_routes_data, parameters
 
     shipping_nodes = shipping_nodes.drop_duplicates(subset=["node_id"])
 
+    logger.info(f'Applying names and geometries {time.time()-tic}')
     shipping_nodes["node_id"] = shipping_nodes.node_id.apply(
         shipping_node_item_to_node_id
     )
@@ -46,6 +52,7 @@ def match_ports_with_shipping_routes(ports, prm_shipping_routes_data, parameters
         )
         return shipping_nodes[shipping_nodes.point == nearest[1]]["node_id"].values[0]
 
+    logger.info(f'Running nearest point matching, workers={parameters["joblib_n_jobs"]}, {time.time()-tic}')
     nearest_nodes = Parallel(n_jobs=parameters["joblib_n_jobs"])(
         delayed(_find_nearest_point)(port, shipping_nodes)
         for _, port in ports.iterrows()

@@ -85,76 +85,64 @@ def merge_facility_with_transportation_network_graph(
         df_buffer,
         parameters['max_geo_matching_distance'],
         meta=meta)).result()#.compute()
-    #client.restart()
+
     
-    
+    ### join the other way - df on to network segment, not network onto df segment
     logger.info(f't_f - {time.time()-tic:.1f} - Point buffering on Dask')
     
     logger.info(f't_s - {time.time()-tic:.1f} - Segment Reduction')
-
-    #unique_nodes = unique_nodes_from_segments(network_data.snapped_geometry)
-    meta = pd.Series({'snapped_geometry':[list]})
-    def dfLStocoordlist(df):
-        return df.snapped_geometry.apply(lambda x: list(x.coords))
-    
-    unique_nodes = client.compute(dd.from_pandas(network_data, npartitions=NPARTITIONS*4).map_partitions(
-        dfLStocoordlist,
-        meta=meta)).result()
-    logger.info(f't_f - {time.time()-tic:.1f} - Exploding...')
-    unique_nodes = unique_nodes.explode().unique().tolist()
-    logger.info(f'len unique_nodes {len(unique_nodes)}, {time.time()-tic:.1f}')
-    
-    logger.info(f't_f - {time.time()-tic:.1f} - Segment Reduction')
-    
-    logger.info(f't_s - {time.time()-tic:.1f} - Preparing Join')
-    
-    logger.info(f't_s - {time.time()-tic:.1f} - Mapping Geometries')
-    
-    
-
-    node_df = pd.DataFrame()
-    node_df["coordinates"] = unique_nodes
-
-    
-    meta = pd.Series({'geometry':['str']})
-    node_df['geometry'] = client.compute(dd.from_pandas(node_df, npartitions=NPARTITIONS*4).map_partitions(lambda df: df['coordinates'].apply(Point), meta=meta)).result()#.compute()
-    #node_df['geometry'] = node_df['coordinates'].apply(Point)
-    
-    #geo_refineries = gpd.GeoDataFrame(facility_data)
-    #geo_pipelines = gpd.GeoDataFrame(node_df)
-    
-    logger.info(f't_f - {time.time()-tic:.1f} - Mapped geometries')
-    
-    
-    def dask_sjoin(df, net_fut):
-        # df = facility_df
-        # df['geometry'] = df["coordinates"].apply(Point)c
-        network_gdf = net_fut#.result()
-        network_gdf = gpd.GeoDataFrame(network_gdf, geometry=network_gdf['geometry'], crs='epsg:4326')
-        gdf = gpd.GeoDataFrame(df, geometry=df['geometry'], crs='epsg:4326')
-        gdf = gpd.sjoin(gdf, network_gdf, how='inner',op='contains')
-
-        return pd.DataFrame(gdf)
     
     meta = facility_data.iloc[0:2,:]
     meta['coordinates_right']=list
+    meta['index_right']='str'
     meta = meta.rename(columns={'coordinates':'coordinates_left'})
+    meta.columns = sorted(meta.columns)
     
-    # this takes a long time and is single threaded, but all seems to work.
-    [net_fut] = client.scatter([node_df], broadcast=True)
+    #[df_fut] = client.scatter([facility_data], broadcast=True)
     
-    logger.info(f'spatial join on dask {time.time()-tic}')
-    matched = client.compute(dd.from_pandas(facility_data, npartitions=NPARTITIONS*4).map_partitions(
-        dask_sjoin,
-        net_fut,
-        meta=meta)).result()#.compute()
-    #client.restart()
     
-    logger.info(f'spatial join on dask {time.time()-tic}')
-    
-    #matched = gpd.sjoin(geo_refineries, geo_pipelines, op="contains", how="inner")
+    def join_df_to_seg(seg_df, df_fut):
+        
+        # get unique nodes in seg 
+        node_df = seg_df.snapped_geometry.apply(lambda x: list(x.coords))
+        
+        node_df = pd.DataFrame(node_df.explode()).drop_duplicates().rename(columns={'snapped_geometry':'coordinates'})
+        #unique_nodes = None # release this memory
+        #print ('node_df')
+        print ('len node_df',len(node_df))
+        
+        # make them into Point geoms
+        node_df["geometry"] = node_df['coordinates'].apply(Point)
+                
+        # join them onto df
+        node_df = gpd.GeoDataFrame(node_df, geometry=node_df['geometry'], crs='epsg:4326')
+        gdf = gpd.GeoDataFrame(df_fut, geometry=df_fut['geometry'], crs='epsg:4326')
+        gdf = gpd.sjoin(gdf, node_df, how='inner',op='contains')
+        del node_df
+        del df_fut
+        
+        gdf = pd.DataFrame(gdf)
+        gdf.columns = sorted(gdf.columns)
+        
+        return gdf
 
-    #matched = pd.DataFrame(matched)
+    logger.info(f't_f - {time.time()-tic:.1f} - Segment Reduction')
+    #matched = client.compute(dd.from_pandas(network_data, npartitions=NPARTITIONS*4).map_partitions(
+    #    join_df_to_seg,
+    #    df_fut,
+    #    meta=meta)).result()#.compute()
+
+    
+    matched = dd.from_pandas(network_data, npartitions=NPARTITIONS*4).map_partitions(
+        join_df_to_seg,
+        facility_data,
+        meta=meta).compute()
+        
+    # remove any duplicates
+    logger.info(f't_s - {time.time()-tic:.1f} - Removing Duplicates')
+    matched = matched.drop_duplicates(subset=['coordinates_left','coordinates_right'])
+    logger.info(f't_f - {time.time()-tic:.1f} - Removing Duplicates')
+    
 
     matched = matched.rename(
         {

@@ -218,13 +218,13 @@ def geomatching_pipeline(**kwargs):
     return Pipeline(
         [
             node(
-                match_ports_with_shipping_routes,
+                match_ports_with_shipping_routes, # (small don't do)
                 ["prm_ports_data", "prm_shipping_routes_data", "parameters"],
                 "prm_ports_matched_with_routes",
                 tags=tags + ["match_ports_with_shipping_routes"],
             ),
             node(
-                match_cities_with_pipelines_and_railways,
+                match_cities_with_pipelines_and_railways, # < - check
                 [
                     "prm_cities_data",
                     "prm_pipelines_data",
@@ -236,7 +236,7 @@ def geomatching_pipeline(**kwargs):
                 tags=tags + ["match_ports_with_shipping_routes"],
             ),
             node(
-                match_lng_terminals_with_shipping_routes,
+                match_lng_terminals_with_shipping_routes, # (small don't do)
                 [
                     "prm_liquid_natural_gas_data",
                     "prm_shipping_routes_data",
@@ -246,7 +246,7 @@ def geomatching_pipeline(**kwargs):
                 tags=tags + ["match_lng_terminals_with_shipping_routes"],
             ),
             node(
-                merge_oil_fields_with_pipeline_network,
+                merge_oil_fields_with_pipeline_network, # very similar to merge facility. adopt from there.
                 ["prm_pipelines_data", "prm_oil_field_data", "parameters"],
                 "prm_oil_field_matched_with_pipelines",
                 tags=tags + ["oil_field_pipeline_matching"],
