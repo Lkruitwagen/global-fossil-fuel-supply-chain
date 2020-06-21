@@ -4,7 +4,7 @@ from .python_helpers import (
     unique_nodes_from_segments,
     convert_segments_to_lines,
 )
-from .geomatching_utils import merge_facility_with_transportation_network_graph
+from .geomatching_utils_dasknetwork import merge_facility_with_transportation_network_graph
 
 from .graph_creation import (
     create_nodes,

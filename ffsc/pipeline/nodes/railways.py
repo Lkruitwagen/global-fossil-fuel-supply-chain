@@ -11,6 +11,7 @@ from ffsc.pipeline.nodes.utils import (
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+gpd.options.use_pygeos=False
 from shapely import geometry
 from typing import List, AnyStr
 from shapely import ops
@@ -99,20 +100,17 @@ def preprocess_railway_data_prm(int_railways, parameters):
         # We only focus on the intersection where the type is either Point or MultiPoint.
         # This removes the intersection of LineStrings with themselves.
         # orig_index is the index for intersection.
-        points_df = (
-            intersected_gdf.loc[
-                intersected_gdf.intersection.apply(lambda x: "Point" in x.type)
-            ]
-            .intersection.apply(
-                lambda x: pd.Series(list(x))
+        intersected_gdf['geomtype'] = intersected_gdf.intersection.apply(lambda x: x.type)
+
+        
+        points_df = intersected_gdf.loc[
+                intersected_gdf.intersection.apply(lambda x: "Point" in x.type) # get only the points
+            ].intersection.apply(
+                lambda x: list(x)
                 if x.type == "MultiPoint"
-                else pd.Series(list([x]))
-            )
-            .stack()
-            .reset_index()
-            .drop(columns=["level_1"])
-            .rename(columns={"level_0": "orig_index", 0: "intersection_point"})
-        )
+                else [x]
+            ).explode().reset_index().rename(columns={'index':'orig_index','intersection':'intersection_point'})
+        
 
         # Remove the duplicated intersections (points appear twice per intersection.)
         points_gdf = gpd.GeoDataFrame(
@@ -181,18 +179,27 @@ def preprocess_railway_data_prm(int_railways, parameters):
             .reset_index()
         )
 
+        for entity_id in entity_ids:
+            if entity_id not in intersecting_points.columns:
+                intersecting_points[entity_id]=None
+        
         # Bring in entity ids and geometries of intersecting LineStrings to the objects above.
         intersecting_points = intersecting_points.merge(
             intersection_df[entity_ids + ["geometry"]].drop_duplicates(), on=entity_ids
         )
 
-        # Snap the intersecting points to LineString objects.
-        intersecting_points["snapped_geometry"] = intersecting_points.apply(
-            lambda row: ops.snap(
-                row["geometry"], row["intersection_point"], parameters["snapping_threshold"]
-            ),
-            axis=1,
-        )
+
+        if not intersecting_points.empty:
+            
+            # Snap the intersecting points to LineString objects.
+            intersecting_points["snapped_geometry"] = intersecting_points.apply(
+                lambda row: ops.snap(
+                    row["geometry"], row["intersection_point"], parameters["snapping_threshold"]
+                ),
+                axis=1,
+            )
+        else:
+            intersecting_points["snapped_geometry"] = None
 
         return intersecting_points[entity_ids + ['snapped_geometry']]
     
@@ -222,7 +229,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
     
     # cast to dask dataframe
     logger.info(f'cast to dask {time.time()-tic}')
-    ddf = dd.from_pandas(railway_missing_region_df, npartitions=NPARTITIONS)
+    ddf = dd.from_pandas(railway_missing_region_df, npartitions=NPARTITIONS*4)
     logger.info(f'cast to dask {time.time()-tic}')
     
     # load NE
@@ -241,7 +248,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
     meta.continent = meta.continent.astype('str')
     logger.info(f'get meta {time.time()-tic}')
     
-    def dask_sjoin(df, obj_col):
+    def dask_sjoin(df, obj_col, world):
 
         df[obj_col] = df["coordinates"].apply(geometry.LineString)
         gdf = gpd.GeoDataFrame(df, geometry=df[obj_col], crs='epsg:4326')
@@ -250,7 +257,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
         return pd.DataFrame(gdf[['railway_id','name','continent']])
     
     logger.info(f'map regions on dask {time.time()-tic}')
-    retrieved_region_df = ddf.map_partitions(dask_sjoin,'railway_object', meta=meta).compute()
+    retrieved_region_df = ddf.map_partitions(dask_sjoin,'railway_object',world, meta=meta).compute()
     logger.info(f'map regions on dask {time.time()-tic}')
     #client.restart()
     
@@ -321,7 +328,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
     logger.info(f'making geometry column {time.time()-tic}')
 
     logger.info(f'making new ddf {time.time()-tic}')
-    ddf = dd.from_pandas(railway_df, npartitions=NPARTITIONS) # bring this from parameters in the future
+    ddf = dd.from_pandas(railway_df, npartitions=len(railway_df.md_region.unique())).set_index('md_region') # This needs to be one for the way that the load gets spread out
 
     logger.info(f'making new ddf {time.time()-tic}')
     meta= pd.DataFrame({'railway_id': [1], 'railway_segment_id': [2], 'snapped_geometry':['str']})
@@ -329,8 +336,7 @@ def preprocess_railway_data_prm(int_railways, parameters):
 
 
     logger.info(f'calling groupby md_region{time.time()-tic}')
-    prm_railways_data = ddf.groupby(['md_region']) \
-                            .apply(find_intersecting_points, 
+    prm_railways_data = ddf.map_partitions(find_intersecting_points, 
                                     parameters, 
                                     'railway_object',
                                     ['railway_id','railway_segment_id'], 

@@ -1,6 +1,7 @@
 import ast
 from shapely import geometry, ops
 import geopandas as gpd
+gpd.options.use_pygeos=False
 from joblib import Parallel, delayed
 import pandas as pd
 import numpy as np
@@ -8,6 +9,11 @@ from ffsc.pipeline.nodes.port_nodes import port_item_to_node_id
 from ffsc.pipeline.nodes.railways import coord_to_rail_key
 from ffsc.pipeline.nodes.pipeline_nodes import coord_to_pipe_key
 from ffsc.pipeline.nodes.utils import preprocess_geodata
+
+import multiprocessing as mp
+NPARTITIONS=mp.cpu_count()//4
+
+import dask.dataframe as dd
 
 
 def preprocess_city_data_int(raw_cities_energy_data, raw_cities_euclidean_data):
@@ -72,29 +78,27 @@ def match_cities_with_pipelines_and_railways(
     cities = prm_cities_data[
         ["city_id", "euclidean_geom", "city_geometry", "city_point"]
     ]
-    cities_gdf = gpd.GeoDataFrame(cities, geometry=cities["euclidean_geom"])
-    pipelines_gdf = gpd.GeoDataFrame(
-        prm_pipelines_data[["pipeline_segment_id", "snapped_geometry"]],
-        geometry=prm_pipelines_data["snapped_geometry"],
-    )
-    railways_gdf = gpd.GeoDataFrame(
-        prm_railways_data[["railway_segment_id", "snapped_geometry"]],
-        geometry=prm_pipelines_data["snapped_geometry"],
-    )
+    cities_cols = {'cols':cities.columns, 'geometry':'euclidean_geom'}
+    pipelines_cols = {'cols':["pipeline_segment_id", "snapped_geometry"],'geometry':'snapped_geometry'}
+    railwyas_cols = {'cols':["railway_segment_id", "snapped_geometry"],'geometry':'snapped_geometry'}
+    
     ports = prm_ports_data[["item_id", "coordinates"]]
     ports["coordinates"] = ports["coordinates"].apply(geometry.Point)
-    ports_gdf = gpd.GeoDataFrame(ports, geometry=ports["coordinates"])
+    
+    #ports_gdf = gpd.GeoDataFrame(ports, geometry=ports["coordinates"])
 
     intersecting_cities_pipelines = find_cities_intersections(
-        cities_gdf, pipelines_gdf, "pipeline", parameters
+        cities_gdf, pipelines_gdf,cities_cols, pipelines_cols, "pipeline", parameters
     )
     intersecting_cities_railways = find_cities_intersections(
-        cities_gdf, railways_gdf, "railway", parameters
+        cities_gdf, railways_gdf,cities_cols, railways_cols, "railway", parameters
     )
     cities_gdf = gpd.GeoDataFrame(cities, geometry=cities["city_geometry"])
     intersecting_cities_ports = gpd.sjoin(
         cities_gdf, ports_gdf, how="inner", op="intersects"
-    )
+    ) # small dataframes just leave in geopandas
+    
+    
     intersecting_cities_ports["connected_node_type"] = "port"
     intersecting_cities_ports = intersecting_cities_ports[
         ["city_id", "city_point", "item_id", "coordinates", "connected_node_type"]
@@ -117,8 +121,32 @@ def match_cities_with_pipelines_and_railways(
     return intersecting_cities
 
 
-def find_cities_intersections(cities, network, entity, parameters):
-    cities_with_intersections = gpd.sjoin(cities, network, how="inner", op="intersects")
+def find_cities_intersections(cities, network, cities_cols, network_cols, entity, parameters):
+    
+    def dask_sjoin(network_seg, cities_df, cities_cols, network_cols):
+        
+        cities_gdf = gpd.GeoDataFrame(cities_df[cities_cols['cols']], geometry=cities_df[cities_cols['geometry']], crs='epsg:4326')
+        network_gdf = gpd.GeoDataFrame(network_seg[network_cols['cols']], geometry=network_seg[network_cols['geometry']], crs='epsg:4326')
+        
+        cities_with_intersections= gpd.sjoin(cities_gdf, network_gdf, how='inner', op='intersects')
+        
+        return pd.DataFrame(cities_with_intersections)
+        
+    meta = pd.DataFrame()
+    for col in cities_cols['cols']+network_cols['cols']:
+        meta[col] = None
+        meta[col] = meta[col].astype(str)
+    
+    
+    
+    cities_with_intersections = dd.from_pandas(network,npartitions=NPARTITIONS*4).map_partitions(
+        dask_sjoin,
+        cities,
+        cities_cols,
+        network_cols,
+        meta=meta).compute()
+    # 
+    #cities_with_intersections = gpd.sjoin(cities, network, how="inner", op="intersects")
 
     def _find_nearest_point(city, entity_shape):
         shape_points = geometry.MultiPoint(
