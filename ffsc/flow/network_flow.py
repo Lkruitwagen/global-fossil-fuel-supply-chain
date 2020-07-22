@@ -13,7 +13,22 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 class make_nx:
 
-    def __init__(self, carrier):
+    def __init__(self, carrier, recipes_used = None):
+        
+        
+        ############################################
+        ########## Changes made by Aaron ###########
+        ############################################
+        
+        ### optional third argument of recipes used is added 
+        
+        # by default, set to the name of the carrier
+        
+        if recipes_used == None:
+            recipes_used = carrier
+        ############################################
+        
+        
         self.all_data_dirs = {
             'cities-N':              os.path.join(os.getcwd(),'results_backup','simplify','cities_nodes_dataframe.csv'),
             'pipelines-cities':      os.path.join(os.getcwd(),'results_backup','simplify','cities_pipelines_edge_dataframe.csv'),
@@ -52,6 +67,8 @@ class make_nx:
         self.carrier = carrier
 
         self.recipes = recipes
+        
+        self.recipes_used = recipes_used ##
 
 
         tperTJ = {
@@ -98,7 +115,33 @@ class make_nx:
                             'wellpads-pipelines':   {'gas':0,'coal':0,'oil':0},
                             }
 
-        print (self.impedance_factors)
+        
+        ############################################
+        ########## Changes made by Aaron ###########
+        ############################################
+        
+        ### print (self.impedance_factors) ### Aaron has commented this out
+        
+        # raise value error unless both valid carrier and valid recipes are used
+        # this ensures that the _load_dfs() will operate correctly
+        
+        valid_carrier = ['oil', 'gas', 'coal']
+        
+        valid_recipes = []
+        for key in recipes:
+                valid_recipes.append(key)
+        
+        if self.carrier in valid_carrier:
+            print('carrier: ' + self.carrier)
+        else:
+            raise ValueError("make_nx: carrier must be one of %r." % valid_carrier)
+            
+        if self.recipes_used in valid_recipes:
+            print('recipes used: ' + self.recipes_used)
+        else:
+            raise ValueError("make_nx: recipes must be one of %r." % valid_recipes)
+        ############################################
+        
 
 
     @staticmethod
@@ -111,7 +154,7 @@ class make_nx:
         self.dfs['cities'] = pd.read_csv(self.all_data_dirs['cities-N'])
         self.dfs['powerstns'] = pd.read_csv(self.all_data_dirs['powerstn-N'])
 
-        keys = [kk['name'] for kk in self.recipes[self.carrier]]
+        keys = [kk['name'] for kk in self.recipes[self.recipes_used]] ##
 
         for kk in keys:
             self.dfs[kk] = pd.read_csv(self.all_data_dirs[kk])
@@ -119,7 +162,7 @@ class make_nx:
 
     def _fill_graph(self):
 
-        for step in self.recipes[self.carrier]:
+        for step in self.recipes[self.recipes_used]: ##
             logger.info(f'doing step {step["desc"]}...')
             dup_strs = ['','']
             start_col = [cc for cc in self.dfs[step['name']].columns if 'START_ID' in cc][0]
@@ -150,7 +193,7 @@ class make_nx:
 
             self.G.add_edges_from(
                 [
-                    ((r[0]+dup_strs[0]).strip(),(r[1]+dup_strs[1]).strip(),{'z':int(round(r[2]*self.impedance_factors[step['name']][self.carrier]))}) 
+                    ((r[0]+dup_strs[0]).strip(),(r[1]+dup_strs[1]).strip(),{'z':int(round(r[2]*self.impedance_factors[step['name']][self.carrier]))})  ##
                 for r in self.dfs[step['name']].loc[:,order+['distance']].values.tolist()]
                 )
 
@@ -268,7 +311,9 @@ class make_nx:
         pickle.dump(flow_cost, open('./'+self.carrier+'_flow_cost.pkl','wb'))
         pickle.dump(flow_dict, open('./'+self.carrier+'_flow_dict.pkl','wb'))
 
+    
 
+    
 
 if __name__=="__main__":
 
