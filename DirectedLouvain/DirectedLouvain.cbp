@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DirectedLouvain" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/convert" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="bin" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="-i ../graph/graph_uw.txt -o u.bin -r" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/DirectedLouvain" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="LICENSE" />
+		<Unit filename="Makefile" />
+		<Unit filename="README.md" />
+		<Unit filename="bin/community" />
+		<Unit filename="bin/convert" />
+		<Unit filename="bin/graph.bin" />
+		<Unit filename="bin/graph.tree" />
+		<Unit filename="bin/graph.w" />
+		<Unit filename="bin/hierarchy" />
+		<Unit filename="bin/modularity_values_louvain_oriente.txt" />
+		<Unit filename="graph/graph.txt" />
+		<Unit filename="graph/graph_small.txt" />
+		<Unit filename="graph/graph_uw.txt" />
+		<Unit filename="include/community.h" />
+		<Unit filename="include/graph.h" />
+		<Unit filename="include/graph_binary.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="obj/Debug/src/community.o" />
+		<Unit filename="obj/Debug/src/graph.o" />
+		<Unit filename="obj/Debug/src/graph_binary.o" />
+		<Unit filename="obj/Debug/src/main_community.o" />
+		<Unit filename="obj/Debug/src/main_compare.o" />
+		<Unit filename="obj/Debug/src/main_convert.o" />
+		<Unit filename="obj/Debug/src/main_hierarchy.o" />
+		<Unit filename="obj/Debug/src/main_high_degree.o" />
+		<Unit filename="obj/Debug/src/main_overlap.o" />
+		<Unit filename="obj/community.o" />
+		<Unit filename="obj/f" />
+		<Unit filename="obj/graph.o" />
+		<Unit filename="obj/graph_binary.o" />
+		<Unit filename="obj/main_community.o" />
+		<Unit filename="obj/main_convert.o" />
+		<Unit filename="obj/main_hierarchy.o" />
+		<Unit filename="src/community.cpp" />
+		<Unit filename="src/compiling_error.txt" />
+		<Unit filename="src/graph.cpp" />
+		<Unit filename="src/graph_binary.cpp" />
+		<Unit filename="src/main_community.cpp" />
+		<Unit filename="src/main_compare.cpp" />
+		<Unit filename="src/main_convert.cpp" />
+		<Unit filename="src/main_hierarchy.cpp" />
+		<Unit filename="src/main_high_degree.cpp" />
+		<Unit filename="src/main_overlap.cpp" />
+		<Unit filename="src/main_random.cpp" />
+		<Unit filename="src/main_reverse.cpp" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
