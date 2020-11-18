@@ -1,313 +1,692 @@
 ##################################################
+## MISC
+##################################################
+
+parameters:
+  type: kedro.extras.datasets.yaml.YAMLDataSet
+  filepath: conf/base/parameters.yml
+
+ne:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
+  filepath: data/ne/ne_10m_countries.geojson
+
+##################################################
 ## RAW DATA
 ##################################################
 
-raw_shipping_routes_data:
-  type: kedro.io.JSONLocalDataSet
+raw_shippingroutes_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/shipping_routes.geojson
 
 raw_ports_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/ports.geojson
-  encoding: "ISO-8859-1"
 
 raw_pipelines_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.json.JSONDataSet
   filepath: data/assets/pipelines.geojson
-  encoding: "ISO-8859-1"
 
-raw_coal_mines_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_coalmines_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/coal_mines.geojson
-  encoding: "ISO-8859-1"
 
-raw_oil_field_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_oilfields_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/fields.geojson
-  encoding: "ISO-8859-1"
 
-raw_liquid_natural_gas_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_lngterminals_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/lng.geojson
-  encoding: "ISO-8859-1"
 
-raw_power_stations_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_powerstations_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/power_stations.geojson
-  encoding: "ISO-8859-1"
 
-raw_processing_plants_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_processingplants_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/processing_plants.geojson
-  encoding: "ISO-8859-1"
 
 raw_railways_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.json.JSONDataSet
   filepath: data/assets/railways.geojson
-  encoding: "ISO-8859-1"
 
 raw_refineries_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/refineries.geojson
-  encoding: "ISO-8859-1"
 
-raw_well_pads_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+raw_oilwells_data:
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/well_pads.geojson
-  encoding: "ISO-8859-1"
 
 raw_cities_energy_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/cities_energy.geojson
-  encoding: "ISO-8859-1"
 
 raw_cities_euclidean_data:
-  type: ffsc.pipeline.datasets.JSONLocalDataSet
+  type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/assets/cities_euclid.geojson
-  encoding: "ISO-8859-1"
 
 ##################################################
-## INTERMEDIATE LAYER
-##################################################
-int_pipelines_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/intermediate/int_pipelines_data.pkl
-
-int_railways_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/intermediate/int_railways_data.pkl
-
-int_cities_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/intermediate/int_cities_data.pkl
-
-##################################################
-## PRIMARY LAYER
+## PREPROCESS LAYER
 ##################################################
 
-prm_shipping_routes_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_shipping_routes_data.pkl
-
-prm_ports_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_ports_data.pkl
-
+prm_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_shippingroutes_data.pqt
+  
 prm_pipelines_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_pipelines_data.pkl
-
-prm_coal_mine_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_coal_mine_data.pkl
-
-prm_oil_field_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_oil_field_data.pkl
-
-prm_liquid_natural_gas_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_liquid_natural_gas_data.pkl
-
-prm_power_stations_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_power_stations_data.pkl
-
-prm_processing_plants_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_processing_plants_data.pkl
-
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_pipelines_data.pqt
+  
 prm_railways_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_railways_data.pkl
-
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_railways_data.pqt
+  
 prm_refineries_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_refineries_data.pkl
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_refineries_data.pqt
+  
+prm_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_oilfields_data.pqt
+  
+prm_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_oilwells_data.pqt
 
-prm_well_pads_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_well_pads_data.pkl
-
-##################################################
-## GEOMATCHING
-##################################################
-
-prm_ports_matched_with_routes:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_ports_matched_with_routes.pkl
-
+prm_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_coalmines_data.pqt
+  
+prm_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_lngterminals_data.pqt
+  
+prm_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_ports_data.pqt
+  
 prm_cities_data:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_cities_data.pkl
-
-prm_cities_matched_with_pipelines_and_railways:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_cities_matched_with_pipelines_and_railways.pkl
-
-prm_refineries_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_refineries_matched_with_pipelines.pkl
-
-prm_oil_field_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_oil_field_matched_with_pipelines.pkl
-
-prm_well_pads_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_well_pads_matched_with_pipelines.pkl
-
-prm_ports_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_ports_matched_with_pipelines.pkl
-
-prm_liquid_natural_gas_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_liquid_natural_gas_matched_with_pipelines.pkl
-
-prm_lng_terminals_matched_with_routes:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_lng_terminals_matched_with_routes.pkl
-
-prm_processing_plants_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_processing_plants_matched_with_pipelines.pkl
-
-prm_power_stations_data_matched_with_pipelines:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_power_stations_data_matched_with_pipelines.pkl
-
-prm_power_stations_data_matched_with_railways:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_power_stations_data_matched_with_railways.pkl
-
-prm_coal_mines_merged_with_railways:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_coal_mines_merged_with_railways.pkl
-
-prm_ports_merged_with_railways:
-  type: kedro.io.PickleLocalDataSet
-  filepath: results/primary/prm_ports_merged_with_railways.pkl
-
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_cities_data.pqt
+  
+prm_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/preprocess/prm_powerstations_data.pqt
 
 ##################################################
-## GRAPH OUTPUT LAYER
+## PREP LAYER
 ##################################################
 
-# Tables
+prp_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_shippingroutes_data.pqt
+  
+prp_pipelines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_pipelines_data.pqt
+  
+prp_railways_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_railways_data.pqt
+  
+prp_refineries_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_refineries_data.pqt
+  
+prp_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_oilfields_data.pqt
+  
+prp_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_oilwells_data.pqt
 
-shipping_node_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/shipping_node_dataframe.csv
+prp_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_coalmines_data.pqt
+  
+prp_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_lngterminals_data.pqt
+  
+prp_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_ports_data.pqt
+  
+prp_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_cities_data.pqt
+  
+prp_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/prep/prp_powerstations_data.pqt
 
-shipping_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/shipping_edge_dataframe.csv
+##################################################
+## SJOIN LAYER
+##################################################
 
-port_node_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/port_node_dataframe.csv
+sjoin_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_shippingroutes_data.pqt
+  
+sjoin_pipelines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_pipelines_data.pqt
+  
+sjoin_railways_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_railways_data.pqt
+  
+sjoin_refineries_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_refineries_data.pqt
+  
+sjoin_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_oilfields_data.pqt
+  
+sjoin_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_oilwells_data.pqt
 
-port_ship_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/port_ship_edge_dataframe.csv
+sjoin_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_coalmines_data.pqt
+  
+sjoin_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_lngterminals_data.pqt
+  
+sjoin_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_ports_data.pqt
+  
+sjoin_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_cities_data.pqt
+  
+sjoin_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_powerstations_data.pqt
+  
+sjoin_edges_shippingroutes_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_shippingroutes_lngterminals.pqt
+  
+sjoin_edges_shippingroutes_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_shippingroutes_ports.pqt
+  
+sjoin_edges_pipelines_refineries:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_refineries.pqt
+  
+sjoin_edges_pipelines_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_oilfields.pqt
 
-port_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/port_pipeline_edge_dataframe.csv
+sjoin_edges_pipelines_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_oilwells.pqt
+  
+sjoin_edges_pipelines_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_lngterminals.pqt
+  
+sjoin_edges_pipelines_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_ports.pqt
+  
+sjoin_edges_pipelines_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_cities.pqt
+  
+sjoin_edges_pipelines_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_pipelines_powerstations.pqt
+  
+sjoin_edges_railways_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_railways_coalmines.pqt
+  
+sjoin_edges_railways_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_railways_ports.pqt
+  
+sjoin_edges_railways_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_railways_cities.pqt
+  
+sjoin_edges_railways_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/sjoin/sjoin_edges_railways_powerstations.pqt
+  
+##################################################
+## FIRSTLASTMILE LAYER
+##################################################
 
-pipeline_node_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/pipeline_node_dataframe.csv
+flmile_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_shippingroutes_data.pqt
+  
+flmile_pipelines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_pipelines_data.pqt
+  
+flmile_railways_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_railways_data.pqt
+  
+flmile_refineries_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_refineries_data.pqt
+  
+flmile_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_oilfields_data.pqt
+  
+flmile_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_oilwells_data.pqt
 
-pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/pipeline_edge_dataframe.csv
+flmile_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_coalmines_data.pqt
+  
+flmile_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_lngterminals_data.pqt
+  
+flmile_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_ports_data.pqt
+  
+flmile_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_cities_data.pqt
+  
+flmile_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_powerstations_data.pqt
+  
+flmile_edges_shippingroutes_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_shippingroutes_lngterminals.pqt
+  
+flmile_edges_shippingroutes_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_shippingroutes_ports.pqt
+  
+flmile_edges_pipelines_refineries:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_refineries.pqt
+  
+flmile_edges_pipelines_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_oilfields.pqt
 
-refinery_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/refinery_nodes_dataframe.csv
+flmile_edges_pipelines_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_oilwells.pqt
+  
+flmile_edges_pipelines_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_lngterminals.pqt
+  
+flmile_edges_pipelines_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_ports.pqt
+  
+flmile_edges_pipelines_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_cities.pqt
+  
+flmile_edges_pipelines_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_pipelines_powerstations.pqt
+  
+flmile_edges_railways_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_railways_coalmines.pqt
+  
+flmile_edges_railways_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_railways_ports.pqt
+  
+flmile_edges_railways_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_railways_cities.pqt
+  
+flmile_edges_railways_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_railways_powerstations.pqt
+  
+flmile_edges_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_oilfields.pqt
+  
+flmile_edges_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_oilwells.pqt
+  
+flmile_edges_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_coalmines.pqt
+  
+flmile_edges_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_powerstations.pqt
+  
+flmile_edges_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_edges_cities.pqt
+  
+flmile_idl_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flmile/flmile_idl_edges.pqt
+  
+##################################################
+## EXPLODE LAYER
+##################################################
 
-refinery_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/refinery_pipeline_edge_dataframe.csv
+explode_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_shippingroutes_data.pqt
+  
+explode_pipelines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_pipelines_data.pqt
+  
+explode_railways_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_railways_data.pqt
+  
+explode_refineries_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_refineries_data.pqt
+  
+explode_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_oilfields_data.pqt
+  
+explode_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_oilwells_data.pqt
 
-oil_field_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/oil_field_nodes_dataframe.csv
+explode_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_coalmines_data.pqt
+  
+explode_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_lngterminals_data.pqt
+  
+explode_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_ports_data.pqt
+  
+explode_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_cities_data.pqt
+  
+explode_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_powerstations_data.pqt
+  
+explode_edges_shippingroutes_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_shippingroutes_lngterminals.pqt
+  
+explode_edges_shippingroutes_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_shippingroutes_ports.pqt
+  
+explode_edges_pipelines_refineries:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_refineries.pqt
+  
+explode_edges_pipelines_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_oilfields.pqt
 
-oil_field_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/oil_field_edge_dataframe.csv
+explode_edges_pipelines_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_oilwells.pqt
+  
+explode_edges_pipelines_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_lngterminals.pqt
+  
+explode_edges_pipelines_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_ports.pqt
+  
+explode_edges_pipelines_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_cities.pqt
+  
+explode_edges_pipelines_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_powerstations.pqt
+  
+explode_edges_railways_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_coalmines.pqt
+  
+explode_edges_railways_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_ports.pqt
+  
+explode_edges_railways_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_cities.pqt
+  
+explode_edges_railways_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_powerstations.pqt
+  
+explode_edges_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_oilfields.pqt
+  
+explode_edges_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_oilwells.pqt
+  
+explode_edges_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_coalmines.pqt
+  
+explode_edges_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_powerstations.pqt
+  
+explode_edges_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_cities.pqt
+  
+explode_edges_pipelines_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_pipelines.pqt
+  
+explode_edges_railways_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_railways.pqt
+  
+explode_edges_shippingroutes_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_shippingroutes_shippingroutes.pqt
+  
+explode_edges_pipelines_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_pipelines_other.pqt
 
-well_pad_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/well_pad_nodes_dataframe.csv
+explode_edges_other_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_other_pipelines.pqt
 
-well_pad_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/well_pad_pipeline_edge_dataframe.csv
+explode_edges_railways_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_railways_other.pqt
 
-lng_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/lng_nodes_dataframe.csv
+explode_edges_other_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_other_railways.pqt
+  
+explode_edges_shippingroutes_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_shippingroutes_other.pqt
+  
+explode_edges_other_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_edges_other_shippingroutes.pqt
+  
+explode_keepnodes_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_keepnodes_pipelines.pqt
+  
+explode_keepnodes_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_keepnodes_railways.pqt
+  
+explode_keepnodes_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/explode/explode_keepnodes_shippingroutes.pqt
 
-lng_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/lng_pipeline_edge_dataframe.csv
+  
+##################################################
+## SIMPLIFY LAYER
+##################################################
 
-lng_shipping_route_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/lng_shipping_route_edge_dataframe.csv
+simplify_shippingroutes_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_shippingroutes_data.pqt
+  
+simplify_pipelines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_pipelines_data.pqt
+  
+simplify_railways_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_railways_data.pqt
+  
+simplify_refineries_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_refineries_data.pqt
+  
+simplify_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_oilfields_data.pqt
+  
+simplify_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_oilwells_data.pqt
 
-processing_plant_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/processing_plant_nodes_dataframe.csv
+simplify_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_coalmines_data.pqt
+  
+simplify_lngterminals_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_lngterminals_data.pqt
+  
+simplify_ports_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_ports_data.pqt
+  
+simplify_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_cities_data.pqt
+  
+simplify_powerstations_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_powerstations_data.pqt
+  
+simplify_edges_shippingroutes_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_shippingroutes_lngterminals.pqt
+  
+simplify_edges_shippingroutes_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_shippingroutes_ports.pqt
+  
+simplify_edges_pipelines_refineries:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_refineries.pqt
+  
+simplify_edges_pipelines_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_oilfields.pqt
 
-processing_plant_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/processing_plant_pipeline_edge_dataframe.csv
-
-power_station_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/power_station_nodes_dataframe.csv
-
-power_station_pipeline_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/power_station_pipeline_edge_dataframe.csv
-
-power_station_railway_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/power_station_railway_edge_dataframe.csv
-
-railway_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/railway_nodes_dataframe.csv
-
-railway_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/railway_edge_dataframe.csv
-
-coal_mines_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/coal_mines_nodes_dataframe.csv
-
-coal_mine_railway_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/coal_mine_railway_edge_dataframe.csv
-
-cities_nodes_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/cities_nodes_dataframe.csv
-
-cities_pipelines_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/cities_pipelines_edge_dataframe.csv
-
-cities_railways_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/cities_railways_edge_dataframe.csv
-
-cities_ports_edge_dataframe:
-  type: kedro.io.CSVLocalDataSet
-  filepath: results/output/cities_ports_edge_dataframe.csv
+simplify_edges_pipelines_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_oilwells.pqt
+  
+simplify_edges_pipelines_lngterminals:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_lngterminals.pqt
+  
+simplify_edges_pipelines_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_ports.pqt
+  
+simplify_edges_pipelines_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_cities.pqt
+  
+simplify_edges_pipelines_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_powerstations.pqt
+  
+simplify_edges_railways_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_coalmines.pqt
+  
+simplify_edges_railways_ports:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_ports.pqt
+  
+simplify_edges_railways_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_cities.pqt
+  
+simplify_edges_railways_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_powerstations.pqt
+  
+simplify_edges_oilfields:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_oilfields.pqt
+  
+simplify_edges_oilwells:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_oilwells.pqt
+  
+simplify_edges_coalmines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_coalmines.pqt
+  
+simplify_edges_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_powerstations.pqt
+  
+simplify_edges_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_cities.pqt
+  
+simplify_edges_pipelines_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_pipelines.pqt
+  
+simplify_edges_railways_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_railways.pqt
+  
+simplify_edges_shippingroutes_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_shippingroutes_shippingroutes.pqt
+  
+simplify_idl_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_idl_edges.pqt
