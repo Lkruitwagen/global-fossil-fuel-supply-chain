@@ -2,6 +2,7 @@
 joblib_n_jobs: 30
 
 max_geo_matching_distance: 10
+BUFFER: 10000
 
 snapping_threshold: 0.0000000001
 

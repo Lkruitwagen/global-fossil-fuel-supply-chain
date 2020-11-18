@@ -33,67 +33,66 @@ from typing import Dict
 from kedro.pipeline import Pipeline, node
 
 
-###########################################################################
-# Here you can find an example pipeline, made of two modular pipelines.
-#
-# Delete this when you start working on your own Kedro project as
-# well as pipelines/data_science AND pipelines/data_engineering
-# -------------------------------------------------------------------------
-
-from ffsc.pipeline.nodes.city_nodes import (
-    preprocess_city_data_int,
-    preprocess_city_data_prm,
-    match_cities_with_pipelines_and_railways,
-    create_city_node_table,
-    create_city_pipeline_edges,
-    create_city_railway_edges,
-    create_city_port_edges,
+from ffsc.pipeline.nodes.preprocess import (
+    preprocess_shippingroutes,
+    preprocess_ports,
+    preprocess_pipelines,
+    preprocess_coalmines,
+    preprocess_oilfields,
+    preprocess_lngterminals,
+    preprocess_powerstations,
+    preprocess_railways,
+    preprocess_refineries,
+    preprocess_oilwells,
+    preprocess_cities_base,
 )
-from ffsc.pipeline.nodes.railways import (
-    preprocess_railway_data_int,
-    preprocess_railway_data_prm,
+from ffsc.pipeline.nodes.prep import (
+    selfjoin_and_dissolve,
+    buffer_and_split
 )
-from ffsc.pipeline.nodes.railways import (
-    preprocess_railway_data_int,
-    preprocess_railway_data_prm,
+from ffsc.pipeline.nodes.utils import (
+    null_forward
 )
-from ffsc.pipeline.nodes import (
-    preprocess_shipping_data,
-    preprocess_port_data,
-    match_ports_with_shipping_routes,
-    preprocess_pipeline_data_prm,
-    preprocess_pipeline_data_int,
-    preprocess_coal_mine_data,
-    preprocess_oil_field_data,
-    preprocess_lng_data,
-    preprocess_power_stations_data,
-    preprocess_processing_plants_data,
-    preprocess_refineries_data,
-    preprocess_well_pads_data,
-    create_pipeline_graph_tables,
-    create_shipping_graph_tables,
-    create_port_node_table,
-    create_port_ship_edges,
-    create_refinery_graph_components,
-    create_oil_field_graph_component,
-    create_well_pad_graph_components,
-    create_lng_graph_components,
-    create_processing_plant_graph_component,
-    create_power_station_graph_components,
-    create_port_pipeline_edges,
-    create_port_railway_edges,
-    create_railway_graph_components,
-    match_lng_terminals_with_shipping_routes,
-    create_coal_mine_graph_components,
-    create_lng_shipping_edges,
-    merge_oil_fields_with_pipeline_network,
+from ffsc.pipeline.nodes.spatialjoin import (
+    spatialjoin
+)
+from ffsc.pipeline.nodes.firstlastmile import (
+    firstmile_edge,
+    powerstations_lastmile,
+    cities_delauney
+)
+from ffsc.pipeline.nodes.explode import (
+    explode_edges_railways,
+    explode_edges_shippingroutes,
+    explode_edges_pipelines,
+    drop_linear
+)
+from ffsc.pipeline.nodes.simplify import (
+    simplify_edges,
+)
+from ffsc.pipeline.nodes.internationaldateline import (
+    connect_IDL    
 )
 
-from ffsc.pipeline.nodes.utils import merge_facility_with_transportation_network_graph
+ALL_SECTORS = ['shippingroutes','pipelines','railways','refineries','oilfields','oilwells','coalmines','lngterminals','ports','cities','powerstations']
 
+SJOIN_PAIRS = [
+        ('shippingroutes','lngterminals'),
+        ('shippingroutes','ports'),
+        ('pipelines','refineries'),
+        ('pipelines','oilfields'),
+        ('pipelines','oilwells'),
+        ('pipelines','lngterminals'),
+        ('pipelines','ports'),
+        ('pipelines','cities'),
+        ('pipelines','powerstations'),
+        ('railways','coalmines'),
+        ('railways','ports'),
+        ('railways','cities'),
+        ('railways','powerstations'),
+    ]
 
-
-def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
+def get_pipeline(tag=None):
     """Create the project's pipeline.
 
     Args:
@@ -104,353 +103,319 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
 
     """
 
+
     data_science_pipeline = (
         preprocess_pipeline()
-        + geomatching_pipeline()
-        + graph_writing_pipeline()
-        # + simplify_pipeline() <- todo
+        + prep_pipeline()
+        + sjoin_pipeline()
+        + firstlastmile_pipeline()
+        + explode_pipeline()
+        + simplify_pipeline()
     )
-
-    return {"ds": data_science_pipeline, "__default__": data_science_pipeline}
+    
+    if tag:
+        if type(tag)==str:
+            return Pipeline([n for n in data_science_pipeline.nodes if tag in n.tags])
+        elif type(tag)==list:
+            return Pipeline([n for n in data_science_pipeline.nodes if np.isin(n.tags,tag).any()])
+        
+    else:
+        return data_science_pipeline
 
 
 def preprocess_pipeline(**kwargs):
+    """The pre-process pipeline generically imports the geojson and other files and writes them to a generic parquet format."""
     tags = ["preprocess"]
     return Pipeline(
         [
             node(
-                preprocess_shipping_data,
-                "raw_shipping_routes_data",
-                "prm_shipping_routes_data",
-                tags=tags + ["preprocess_shipping"],
+                preprocess_shippingroutes,
+                "raw_shippingroutes_data",
+                "prm_shippingroutes_data",
+                tags=tags + ["preprocess_shippingroutes"],
             ),
             node(
-                preprocess_port_data,
+                preprocess_ports,
                 "raw_ports_data",
                 "prm_ports_data",
-                tags=tags + ["preprocess_port"],
+                tags=tags + ["preprocess_ports"],
             ),
             node(
-                preprocess_pipeline_data_int,
+                preprocess_pipelines,
                 "raw_pipelines_data",
-                "int_pipelines_data",
-                tags=tags + ["preprocess_pipelines"],
-            ),
-            node(
-                preprocess_pipeline_data_prm,
-                ["int_pipelines_data", "parameters"],
                 "prm_pipelines_data",
                 tags=tags + ["preprocess_pipelines"],
             ),
+
             node(
-                preprocess_coal_mine_data,
-                "raw_coal_mines_data",
-                "prm_coal_mine_data",
-                tags=tags + ["preprocess_coal_mines"],
+                preprocess_coalmines,
+                "raw_coalmines_data",
+                "prm_coalmines_data",
+                tags=tags + ["preprocess_coalmines"],
             ),
             node(
-                preprocess_oil_field_data,
-                "raw_oil_field_data",
-                "prm_oil_field_data",
-                tags=tags + ["preprocess_oil_fields"],
+                preprocess_oilfields,
+                "raw_oilfields_data",
+                "prm_oilfields_data",
+                tags=tags + ["preprocess_oilfields"],
             ),
             node(
-                preprocess_lng_data,
-                "raw_liquid_natural_gas_data",
-                "prm_liquid_natural_gas_data",
-                tags=tags + ["preprocess_lng"],
+                preprocess_lngterminals,
+                "raw_lngterminals_data",
+                "prm_lngterminals_data",
+                tags=tags + ["preprocess_lngterminals"],
             ),
             node(
-                preprocess_power_stations_data,
-                "raw_power_stations_data",
-                "prm_power_stations_data",
-                tags=tags + ["preprocess_power_stations"],
+                preprocess_powerstations,
+                "raw_powerstations_data",
+                "prm_powerstations_data",
+                tags=tags + ["preprocess_powerstations"],
             ),
             node(
-                preprocess_processing_plants_data,
-                "raw_processing_plants_data",
-                "prm_processing_plants_data",
-                tags=tags + ["preprocess_processing_plants"],
-            ),
-            node(
-                preprocess_railway_data_int,
+                preprocess_railways,
                 "raw_railways_data",
-                "int_railways_data",
-                tags=tags + ["preprocess_railways"],
-            ),
-            node(
-                preprocess_railway_data_prm,
-                ["int_railways_data", "parameters"],
                 "prm_railways_data",
                 tags=tags + ["preprocess_railways"],
             ),
             node(
-                preprocess_refineries_data,
-                "raw_refineries_data",
+                preprocess_refineries,
+                ["raw_refineries_data","raw_processingplants_data"],
                 "prm_refineries_data",
                 tags=tags + ["preprocess_refineries"],
             ),
             node(
-                preprocess_well_pads_data,
-                "raw_well_pads_data",
-                "prm_well_pads_data",
-                tags=tags + ["preprocess_well_pads"],
+                preprocess_oilwells,
+                "raw_oilwells_data",
+                "prm_oilwells_data",
+                tags=tags + ["preprocess_wellpads"],
             ),
             node(
-                preprocess_city_data_int,
-                ["raw_cities_energy_data", "raw_cities_euclidean_data"],
-                "int_cities_data",
-                tags=tags + ["preprocess_cities_data"],
-            ),
-            node(
-                preprocess_city_data_prm,
-                "int_cities_data",
+                preprocess_cities_base,
+                ["raw_cities_energy_data"],
                 "prm_cities_data",
-                tags=tags + ["preprocess_cities_data"],
+                tags=tags + ["preprocess_cities"],
             ),
         ]
     )
 
 
-def geomatching_pipeline(**kwargs):
-    tags = ["geo_matching"]
-
-    return Pipeline(
-        [
-            node(
-                match_ports_with_shipping_routes, # (small don't do)
-                ["prm_ports_data", "prm_shipping_routes_data", "parameters"],
-                "prm_ports_matched_with_routes",
-                tags=tags + ["match_ports_with_shipping_routes"],
-            ),
-            node(
-                match_cities_with_pipelines_and_railways, # < - check
-                [
-                    "prm_cities_data",
-                    "prm_pipelines_data",
-                    "prm_railways_data",
-                    "prm_ports_data",
-                    "parameters",
-                ],
-                "prm_cities_matched_with_pipelines_and_railways",
-                tags=tags + ["match_ports_with_shipping_routes"],
-            ),
-            node(
-                match_lng_terminals_with_shipping_routes, # (small don't do)
-                [
-                    "prm_liquid_natural_gas_data",
-                    "prm_shipping_routes_data",
-                    "parameters",
-                ],
-                "prm_lng_terminals_matched_with_routes",
-                tags=tags + ["match_lng_terminals_with_shipping_routes"],
-            ),
-            node(
-                merge_oil_fields_with_pipeline_network, # very similar to merge facility. adopt from there.
-                ["prm_pipelines_data", "prm_oil_field_data", "parameters"],
-                "prm_oil_field_matched_with_pipelines",
-                tags=tags + ["oil_field_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_well_pads_data", "parameters"],
-                "prm_well_pads_matched_with_pipelines",
-                tags=tags + ["well_pad_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_refineries_data", "parameters"],
-                "prm_refineries_matched_with_pipelines",
-                tags=tags + ["match_refineries_with_pipelines"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_ports_data", "parameters"],
-                "prm_ports_matched_with_pipelines",
-                tags=tags + ["port_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_railways_data", "prm_ports_data", "parameters"],
-                "prm_ports_matched_with_railways",
-                tags=tags + ["port_railway_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_liquid_natural_gas_data", "parameters"],
-                "prm_liquid_natural_gas_matched_with_pipelines",
-                tags=tags + ["liquid_natural_gas_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_processing_plants_data", "parameters"],
-                "prm_processing_plants_matched_with_pipelines",
-                tags=tags + ["processing_plants_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_railways_data", "prm_power_stations_data", "parameters"],
-                "prm_power_stations_data_matched_with_railways",
-                tags=tags + ["power_stations_railway_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_pipelines_data", "prm_power_stations_data", "parameters"],
-                "prm_power_stations_data_matched_with_pipelines",
-                tags=tags + ["power_stations_pipeline_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_railways_data", "prm_coal_mine_data", "parameters"],
-                "prm_coal_mines_merged_with_railways",
-                tags=tags + ["coal_mine_railway_matching"],
-            ),
-            node(
-                merge_facility_with_transportation_network_graph,
-                ["prm_railways_data", "prm_ports_data", "parameters"],
-                "prm_ports_merged_with_railways",
-                tags=tags + ["port_railway_matching"],
-            ),
-        ]
-    )
+def prep_pipeline(**kwargs):
+    """The prep pipeline performs spatial operations on the data in preparation for spatial joining, accelerated by multiprocessing."""
+    tags = ["prep"]
+    
+    sjd_nodes = [node(selfjoin_and_dissolve, f'prm_{sector}_data',f'prp_{sector}_data',tags=tags+['sjd',f'sjd_{sector}']) 
+                 for sector in ['railways','pipelines'] ]
+    
+    buffer_and_split_nodes = [node(buffer_and_split,[f'prm_{sector}_data','parameters'],f'prp_{sector}_data',tags=tags+['buffer',f'buffer_{sector}']) 
+                              for sector in ['refineries','oilfields','oilwells','coalmines','lngterminals','ports','cities','powerstations']]
+    
+    null_nodes = [node(null_forward,f'prm_{sector}_data',f'prp_{sector}_data',tags=tags+['prep_null',f'prep_null_{sector}']) 
+                  for sector in ['shippingroutes']]
+    
+    
+    return Pipeline(sjd_nodes + buffer_and_split_nodes + null_nodes)
 
 
-def graph_writing_pipeline(**kwargs):
-    tags = ["graph_writing"]
+def sjoin_pipeline(**kwargs):
+    """ The sjoin pipeline performs spatial joins between the datasets"""
+    tags = ["sjoin"]
+    
+    sjoin_nodes = [node(spatialjoin, [f'prp_{sector1}_data',f'prp_{sector2}_data'],f'sjoin_edges_{sector1}_{sector2}',tags=tags+['sjoin_mp',f'sjoin_{sector1}_{sector2}'])
+                  for sector1, sector2 in SJOIN_PAIRS]
+    null_nodes = [node(null_forward,f'prp_{sector}_data',f'sjoin_{sector}_data', tags=tags+['sjoin_null',f'sjoin_null_{sector}'])
+                 for sector in ALL_SECTORS]
 
-    return Pipeline(
-        [
-            node(
-                create_shipping_graph_tables,
-                "prm_shipping_routes_data",
-                ["shipping_node_dataframe", "shipping_edge_dataframe"],
-                tags=tags + ["ship_route_graph"],
-            ),
-            node(
-                create_port_node_table,
-                "prm_ports_data",
-                "port_node_dataframe",
-                tags=tags + ["port_nodes"],
-            ),
-            node(
-                create_port_ship_edges,
-                "prm_ports_matched_with_routes",
-                "port_ship_edge_dataframe",
-                tags=tags + ["port_ship_edges"],
-            ),
-            node(
-                create_lng_shipping_edges,
-                "prm_lng_terminals_matched_with_routes",
-                "lng_shipping_route_edge_dataframe",
-                tags=tags + ["lng_ship_edges"],
-            ),
-            node(
-                create_port_pipeline_edges,
-                "prm_ports_matched_with_pipelines",
-                "port_pipeline_edge_dataframe",
-                tags=tags + ["port_pipeline_edges"],
-            ),
-            node(
-                create_port_railway_edges,
-                "prm_ports_matched_with_railways",
-                "port_railway_edge_dataframe",
-                tags=tags + ["port_railway_edges"],
-            ),
-            node(
-                create_pipeline_graph_tables,
-                ["prm_pipelines_data", "parameters"],
-                ["pipeline_node_dataframe", "pipeline_edge_dataframe"],
-                tags=tags + ["pipeline_graph"],
-            ),
-            node(
-                create_refinery_graph_components,
-                ["prm_refineries_data", "prm_refineries_matched_with_pipelines"],
-                ["refinery_nodes_dataframe", "refinery_pipeline_edge_dataframe"],
-                tags=tags + ["refinery_graph"],
-            ),
-            node(
-                create_oil_field_graph_component,
-                ["prm_oil_field_data", "prm_oil_field_matched_with_pipelines"],
-                ["oil_field_nodes_dataframe", "oil_field_edge_dataframe"],
-                tags=tags + ["oil_field_graph"],
-            ),
-            node(
-                create_well_pad_graph_components,
-                ["prm_well_pads_data", "prm_well_pads_matched_with_pipelines"],
-                ["well_pad_nodes_dataframe", "well_pad_pipeline_edge_dataframe"],
-                tags=tags + ["well_pad_graph"],
-            ),
-            node(
-                create_lng_graph_components,
-                [
-                    "prm_liquid_natural_gas_data",
-                    "prm_liquid_natural_gas_matched_with_pipelines",
-                ],
-                ["lng_nodes_dataframe", "lng_pipeline_edge_dataframe"],
-                tags=tags + ["lng_graph"],
-            ),
-            node(
-                create_processing_plant_graph_component,
-                [
-                    "prm_processing_plants_data",
-                    "prm_processing_plants_matched_with_pipelines",
-                ],
-                [
-                    "processing_plant_nodes_dataframe",
-                    "processing_plant_pipeline_edge_dataframe",
-                ],
-                tags=tags + ["processing_plant_graph"],
-            ),
-            node(
-                create_power_station_graph_components,
-                [
-                    "prm_power_stations_data",
-                    "prm_power_stations_data_matched_with_pipelines",
-                    "prm_power_stations_data_matched_with_railways",
-                ],
-                [
-                    "power_station_nodes_dataframe",
-                    "power_station_pipeline_edge_dataframe",
-                    "power_station_railway_edge_dataframe",
-                ],
-                tags=tags + ["power_station_graph"],
-            ),
-            node(
-                create_railway_graph_components,
-                "prm_railways_data",
-                ["railway_nodes_dataframe", "railway_edge_dataframe"],
-                tags=tags + ["railway_graph"],
-            ),
-            node(
-                create_coal_mine_graph_components,
-                ["prm_coal_mine_data", "prm_coal_mines_merged_with_railways"],
-                ["coal_mines_nodes_dataframe", "coal_mine_railway_edge_dataframe"],
-                tags=tags + ["coal_mine_graph"],
-            ),
-            node(
-                create_city_node_table,
-                ["prm_cities_data", "parameters"],
-                "cities_nodes_dataframe",
-                tags=tags + ["cities_nodes"],
-            ),
-            node(
-                create_city_pipeline_edges,
-                "prm_cities_matched_with_pipelines_and_railways",
-                "cities_pipelines_edge_dataframe",
-                tags=tags + ["cities_pipelines_edges"],
-            ),
-            node(
-                create_city_railway_edges,
-                "prm_cities_matched_with_pipelines_and_railways",
-                "cities_railways_edge_dataframe",
-                tags=tags + ["cities_railways_edges"],
-            ),
-            node(
-                create_city_port_edges,
-                "prm_cities_matched_with_pipelines_and_railways",
-                "cities_ports_edge_dataframe",
-                tags=tags + ["cities_ports_edges"],
-            ),
-        ]
-    )
+    return Pipeline(sjoin_nodes + null_nodes)
+
+
+def firstlastmile_pipeline(**kwargs):
+    """The first and last mile pipeline attaches any unattached elements to ensure a fully-connected graph"""
+    tags = ['flmile']
+    
+    firstmile_nodes = [
+        node(
+            firstmile_edge,
+            ['sjoin_oilfields_data','sjoin_edges_pipelines_oilfields','sjoin_ports_data','sjoin_cities_data','sjoin_pipelines_data'],
+            'flmile_edges_oilfields',
+            tags=tags+['firstmile','firstmile_oilfields']
+        ), # assets, existing_edges, closest port, city, [pipeline/railway]
+        node(
+            firstmile_edge,
+            ['sjoin_oilwells_data','sjoin_edges_pipelines_oilwells','sjoin_ports_data','sjoin_cities_data','sjoin_pipelines_data'],
+            'flmile_edges_oilwells',
+            tags=tags+['firstmile','firstmile_oilwells']
+        ), # assets, existing_edges, closest port, city, [pipeline/railway]
+        node(
+            firstmile_edge,
+            ['sjoin_coalmines_data','sjoin_edges_railways_coalmines','sjoin_ports_data','sjoin_cities_data','sjoin_railways_data'],
+            'flmile_edges_coalmines',
+            tags=tags+['firstmile','firstmile_coalmines']
+        ), # assets, existing_edges, closest port, city, [pipeline/railway]
+    ] 
+    lastmile_nodes = [
+        node(
+            powerstations_lastmile,
+            ['sjoin_powerstations_data','sjoin_edges_pipelines_powerstations','sjoin_edges_railways_powerstations','sjoin_railways_data','sjoin_pipelines_data','sjoin_ports_data','sjoin_cities_data'], # powerstations, ps_edges_pipelines, ps_edges_railways, railways, pipelines, ports, cities
+            'flmile_edges_powerstations',
+            tags=tags+['lastmile','lastmile_powerstations']
+        )
+    ]
+    lastmile_nodes += [
+        node(
+            cities_delauney,
+            ['sjoin_cities_data','ne'],
+            'flmile_edges_cities',
+            tags = tags+['lastmile','lastmile_cities']
+        )
+    ]
+    
+    IDL_nodes = [
+        node(
+            connect_IDL,
+            'sjoin_shippingroutes_data',
+            'flmile_idl_edges',
+            tags=tags+['flmile_idl']
+        )
+    ]
+    
+    null_nodes = [node(null_forward, f'sjoin_{sector}_data', f'flmile_{sector}_data',tags = tags+['flm_null',f'flm_null_{sector}'])
+                 for sector in ALL_SECTORS]
+    null_nodes += [node(null_forward, f'sjoin_edges_{sector1}_{sector2}', f'flmile_edges_{sector1}_{sector2}', tags=tags+['flm_null',f'flm_null_{sector1}_{sector2}'])
+                  for sector1, sector2 in SJOIN_PAIRS]
+    
+    return Pipeline(firstmile_nodes + lastmile_nodes + IDL_nodes + null_nodes)
+    
+
+def explode_pipeline(**kwargs):
+    """penultimate step explodes linear data into points and edges """
+    tags=['explode']
+    
+    PIPELINE_PAIRS = [
+        ('pipelines','refineries'),
+        ('pipelines','oilfields'),
+        ('pipelines','oilwells'),
+        ('pipelines','lngterminals'),
+        ('pipelines','ports'),
+        ('pipelines','cities'),
+        ('pipelines','powerstations')
+    ]
+    
+    RAILWAY_PAIRS = [
+        ('railways','coalmines'),
+        ('railways','ports'),
+        ('railways','cities'),
+        ('railways','powerstations'),
+    ]
+    
+    PIPELINE_EDGES = [f'flmile_edges_{sector1}_{sector2}' for sector1, sector2 in PIPELINE_PAIRS] + ['flmile_edges_powerstations','flmile_edges_oilfields','flmile_edges_oilwells']
+    RAILWAY_EDGES = [f'flmile_edges_{sector1}_{sector2}' for sector1, sector2 in RAILWAY_PAIRS] + ['flmile_edges_powerstations','flmile_edges_coalmines']
+    SHIPPINGROUTES_EDGES = [f'flmile_edges_{sector1}_{sector2}' for sector1,sector2 in [('shippingroutes','lngterminals'),('shippingroutes','ports')]]
+    
+    explode_nodes = [
+        node(
+            explode_edges_pipelines,
+            ['flmile_pipelines_data']+PIPELINE_EDGES,
+            ['explode_pipelines_data', 'explode_edges_pipelines_pipelines','explode_keepnodes_pipelines','explode_edges_pipelines_other', 'explode_edges_other_pipelines'],
+            tags=tags+['explode_edges','explode_edges_pipelines']
+        ),
+        node(
+            explode_edges_railways,
+            ['flmile_railways_data']+RAILWAY_EDGES,
+            ['explode_railways_data', 'explode_edges_railways_railways','explode_keepnodes_railways','explode_edges_railways_other', 'explode_edges_other_railways'],
+            tags=tags+['explode_edges','explode_edges_railways']
+        ),
+        node(
+            explode_edges_shippingroutes,
+            ['flmile_shippingroutes_data']+SHIPPINGROUTES_EDGES + ['flmile_idl_edges'],
+            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes','explode_keepnodes_shippingroutes','explode_edges_shippingroutes_other', 'explode_edges_other_shippingroutes'],
+            tags=tags+['explode_edges','explode_edges_shippingroutes']
+        ),
+    ]
+    
+    drop_nodes = [
+        node(drop_linear,
+             f'flmile_edges_{sector}',
+             f'explode_edges_{sector}',
+             tags=tags+['drop_linear', f'drop_linear_{sector}']
+        )
+        for sector in ['powerstations','oilfields','oilwells','coalmines']
+    ]
+    
+    null_nodes = [
+        node(null_forward,
+             f'flmile_{sector}_data',
+             f'explode_{sector}_data',
+             tags=tags+['explode_null',f'explode_null_{sector}']
+            )
+        for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
+    ]
+    
+
+    
+    return Pipeline(explode_nodes+drop_nodes+null_nodes)
+
+    
+def simplify_pipeline(**kwargs):
+    """final step simplified linear data for network assembly """
+    tags=['simplify']
+    
+    simplify_nodes = [
+        node(
+            simplify_edges,
+            ['explode_pipelines_data', 'explode_edges_pipelines_pipelines', 'explode_keepnodes_pipelines'],
+            ['simplify_pipelines_data', 'simplify_edges_pipelines_pipelines'],
+            tags=tags+['simplify_edges','simpify_edges_pipelines']
+        ),
+        node(
+            simplify_edges,
+            ['explode_railways_data', 'explode_edges_railways_railways', 'explode_keepnodes_railways'],
+            ['simplify_railways_data', 'simplify_edges_railways_railways'],
+            tags=tags+['simplify_edges','simpify_edges_railways']
+        ),
+        node(
+            simplify_edges,
+            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes', 'explode_keepnodes_shippingroutes'],
+            ['simplify_shippingroutes_data', 'simplify_edges_shippingroutes_shippingroutes'],
+            tags=tags+['simplify_edges','simpify_edges_shippingroutes']
+        ),
+    ]
+    
+
+    
+    null_nodes = [
+        node(null_forward, 
+             f'explode_edges_{sector1}_{sector2}', 
+             f'simplify_edges_{sector1}_{sector2}', 
+             tags=tags+['null',f'null_{sector1}_{sector2}']
+            )
+        for sector1, sector2 in SJOIN_PAIRS
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+             f'explode_{sector}_data',
+             f'simplify_{sector}_data',
+             tags=tags+['null',f'null_{sector}']
+            )
+        for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+             f'explode_edges_{sector}',
+             f'simplify_edges_{sector}',
+             tags=tags+['null',f'null_edges_{sector}']
+            )
+        for sector in ['oilfields','oilwells','coalmines','cities','powerstations']
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+            'explode_idl_edges',
+            'simplify_idl_edges',
+            tags=tags+['null']
+        )
+    ]
+    
+    return Pipeline(simplify_nodes+null_nodes)
 
