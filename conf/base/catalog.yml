@@ -5,6 +5,10 @@
 parameters:
   type: kedro.extras.datasets.yaml.YAMLDataSet
   filepath: conf/base/parameters.yml
+  
+flow_parameters:
+  type: kedro.extras.datasets.yaml.YAMLDataSet
+  filepath: conf/base/flow_parameters.yml
 
 ne:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
@@ -13,6 +17,10 @@ ne:
 ##################################################
 ## RAW DATA
 ##################################################
+
+iso2:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/iso2.csv
 
 raw_shippingroutes_data:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
@@ -690,3 +698,64 @@ simplify_edges_shippingroutes_shippingroutes:
 simplify_idl_edges:
   type: kedro.extras.datasets.pandas.ParquetDataSet
   filepath: results/simplify/simplify_idl_edges.pqt
+  
+simplify_edges_pipelines_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_other.pqt
+
+simplify_edges_other_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_pipelines.pqt
+
+simplify_edges_railways_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_other.pqt
+
+simplify_edges_other_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_railways.pqt
+  
+simplify_edges_shippingroutes_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_shippingroutes_other.pqt
+  
+simplify_edges_other_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_shippingroutes.pqt
+  
+  
+##################################################
+## FLOW
+##################################################
+
+flow_coal_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_edges.pqt
+  
+flow_gas_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_edges.pqt
+  
+flow_oil_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_edges.pqt
+  
+flow_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coalmines_data.pqt
+  
+flow_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oilfields_data.pqt
+  
+flow_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oilwells_data.pqt
+  
+flow_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_cities_data.pqt
+  
+global_energy_production:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/primary_energy_production.csv
