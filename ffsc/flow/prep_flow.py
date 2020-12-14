@@ -3,6 +3,10 @@ import logging, os, sys, pickle, json
 import pandas as pd
 from math import pi
 import numpy as np
+from tqdm import tqdm
+tqdm.pandas()
+
+from shapely import geometry, ops, wkt
 
 import geopandas as gpd
 
@@ -23,6 +27,19 @@ def prep_oilwells(df, iso2):
     return df[['unique_id','iso2']]
 
 def prep_coalmines(df, iso2, ne):
+    
+    def min_nedist(row):
+    
+        def mindist(pt1,pt2):
+            try:
+                return V_inv((pt1.y,pt1.x),(pt2.y, pt2.x))[0]*1000
+            except:
+                return np.inf
+
+        ne['NEAREST_PTS'] = ne['geometry'].apply(lambda geom: ops.nearest_points(geom,row['geometry']))
+        ne['DIST'] = ne['NEAREST_PTS'].apply(lambda el: mindist(el[0],el[1]))
+
+        return ne.iat[ne['DIST'].idxmin(), ne.columns.get_loc('ISO_A2')]
 
     df['md_country'] = df['md_country'].str.lower()
     iso2['country'] = iso2['country'].str.lower()
@@ -36,9 +53,12 @@ def prep_coalmines(df, iso2, ne):
     df = gpd.GeoDataFrame(df, geometry='geometry')
     df = gpd.sjoin(gpd.GeoDataFrame(df, geometry='geometry'), ne[['ISO_A2','geometry']], how='left')
     df['iso2'] = df['iso2'].fillna(df['ISO_A2'])
+
+    df['unique_id'] = 'COALMINE_'+df.index.astype(str)       
+        
+    df.loc[df['iso2'].isna(),'iso2'] = df.loc[df['iso2'].isna(),:].progress_apply(lambda row: min_nedist(row), axis=1)
     print (df['iso2'])
     print (df['iso2'].isna().sum())
-    df['unique_id'] = 'COALMINE_'+df.index.astype(str)
     
     return df[['unique_id','iso2']]
 

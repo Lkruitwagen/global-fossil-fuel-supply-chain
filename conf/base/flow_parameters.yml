@@ -8,7 +8,7 @@ ROADLOAD: 5.714285714285715
 SEACOST: 0.0031746031746031746
 SEALOAD: 1.4285714285714288
 check_paths: true
-constrain_production: false
+constrain_production: true
 tperTJ:
   coal: 34.129692832764505
   gas: 19.23076923076923

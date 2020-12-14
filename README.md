@@ -65,7 +65,7 @@ but everything described here should also work with Neo4j 4.0
 
 Save the environment variables we need in activation and deactivation scripts in the conda environment. Follow the [conda instructions](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#setting-environment-variables) for your os, and adapt the following:
 
-    cd $CONDA_PREFIX
+    cd CONDA_PREFIX
     mkdir -p ./etc/conda/activate.d
     mkdir -p ./etc/conda/deactivate.d
     touch ./etc/conda/activate.d/env_vars.sh
@@ -88,6 +88,18 @@ edit `./etc/conda/deactivate.d/env_vars.sh` as follows:
     unset USE_PYGEOS
 
 Save and close both files.
+
+
+### Community Detection
+
+Clone [the DirectedLouvain repository](https://github.com/nicolasdugue/DirectedLouvain)
+
+    git clone https://github.com/nicolasdugue/DirectedLouvain.git
+    
+Enter the repository and run the MakeFile
+
+    cd DirectedLouvain
+    make
 
 
 ## Useage

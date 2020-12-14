@@ -543,6 +543,9 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
             update_potentials(i, p, q)
 
         global_counter +=1
+        
+        #flow_cost = sum(c * x for c, x in zip(C, x))
+        #logger.info(f'Counter: {global_counter}, cost: {flow_cost}, time: {time.time()-tic}')
 
         if global_counter %1000 ==0:
             #print (x[0:10], C[0:10]) np.nansum([c * x for c, x in zip(C, x)])  #
