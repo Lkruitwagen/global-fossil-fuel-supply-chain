@@ -14,7 +14,7 @@ logger=logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 def prep_oilwells(df, iso2):
-    df.loc[[2,3],'md_country'] = 'Congo, (Brazzaville)'
+    df.loc[[2,3,24],'md_country'] = 'Congo, (Brazzaville)'
     df.loc[[7,8],'md_country'] = "Cote d'Ivoire"
     df.loc[1863,'md_country'] = 'iran, islamic republic of'
     
@@ -23,6 +23,8 @@ def prep_oilwells(df, iso2):
     
     df = pd.merge(df, iso2[['country','iso2']], how='left',left_on='md_country',right_on='country')
     df['unique_id'] = 'OILWELL_' + df.index.astype(str)
+
+    print ('isna',df['iso2'].isna().sum())
 
     return df[['unique_id','iso2']]
 
@@ -57,7 +59,6 @@ def prep_coalmines(df, iso2, ne):
     df['unique_id'] = 'COALMINE_'+df.index.astype(str)       
         
     df.loc[df['iso2'].isna(),'iso2'] = df.loc[df['iso2'].isna(),:].progress_apply(lambda row: min_nedist(row), axis=1)
-    print (df['iso2'])
     print (df['iso2'].isna().sum())
     
     return df[['unique_id','iso2']]
@@ -90,6 +91,8 @@ def prep_oilfields(df_oilfields, iso2):
     df['iso2'] = df['iso2'].apply(lambda el: ';'.join(el))
     
     df['unique_id'] = 'OILFIELD_' + df.index.astype(str)
+    
+    print ('isna',df['iso2'].isna().sum())
     
     return df
 

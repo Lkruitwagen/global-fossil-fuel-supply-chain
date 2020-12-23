@@ -1,0 +1,96 @@
+community_levels:
+  coal: 8
+  gas: 11
+  oil: 10
+type_style:
+  edges:
+    alpha: 0.3
+    linewidth: 1
+    zorder: 1
+  lin_asset:
+    alpha: 0.3
+    linewidth: 1
+    zorder: 1
+  missing:
+    alpha: 0.7
+    markersize: 6
+    zorder: 3
+  missing_city:
+    alpha: 1
+    marker: 6
+    markersize: 6
+    zorder: 3
+  missing_powerstation:
+    alpha: 1
+    marker: 7
+    markersize: 6
+    zorder: 3
+  ne:
+    alpha: 1.0
+    zorder: 0
+  pt_asset:
+    alpha: 0.6
+    markersize: 5
+    zorder: 2
+vis_N_communities: 5
+vis_colors:
+  CITY:
+  - 150
+  - 195
+  - 228
+  COALMINE:
+  - 137
+  - 22
+  - 62
+  FINALMILE:
+  - 150
+  - 195
+  - 228
+  LNGTERMINAL:
+  - 70
+  - 190
+  - 177
+  MISSING_CITY:
+  - 81
+  - 112
+  - 135
+  MISSING_POWERSTATION:
+  - 255
+  - 0
+  - 0
+  OILFIELD:
+  - 0
+  - 28
+  - 73
+  OILWELL:
+  - 108
+  - 0
+  - 147
+  PIPELINE:
+  - 0
+  - 100
+  - 0
+  PORT:
+  - 235
+  - 138
+  - 28
+  POWERSTATION:
+  - 138
+  - 194
+  - 126
+  RAILWAY:
+  - 67
+  - 67
+  - 67
+  REFINERY:
+  - 190
+  - 70
+  - 166
+  SHIPPINGROUTE:
+  - 127
+  - 86
+  - 54
+  ne:
+  - 219
+  - 219
+  - 219

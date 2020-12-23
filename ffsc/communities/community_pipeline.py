@@ -36,7 +36,8 @@ from kedro.pipeline import Pipeline, node
 from ffsc.communities.community_methods import (
     format_textfiles,
     run_communities,
-    post_communities
+    post_community_nodes,
+    post_community_edges
 )
 
 def get_pipeline(tag=None):
@@ -54,7 +55,8 @@ def get_pipeline(tag=None):
     data_science_pipeline = (
         community_prep()
         + community_run()
-        + community_post()
+        + community_post_nodes_pl()
+        + community_post_edges_pl()
     )
     
     if tag:
@@ -117,16 +119,54 @@ def community_run(**kwargs):
 
     
     
-def community_post(**kwargs):
+def community_post_nodes_pl(**kwargs):
     """post-process the DirectedLouvain results."""
-    tags = ["community-post"]
+    tags = ["community-post-nodes"]
     
     nodes = [
             node(
-                post_communities,
+                post_community_nodes,
                 ["flow_coal_nx_nodes","flow_oil_nx_nodes","flow_gas_nx_nodes"],
-                ["communities_coal_nx_nodes","communities_oil_nx_nodes","communities_gas_nx_nodes"],
+                ["community_coal_nodes_interim","community_oil_nodes_interim","community_gas_nodes_interim"],
                 tags=tags,
+            ),
+        ]
+        
+    return Pipeline(nodes)
+
+    
+def community_post_edges_pl(**kwargs):
+    """post-process the DirectedLouvain results."""
+    tags = ["community-post-edges"]
+    PT_ASSETS = [
+        'simplify_refineries_data',
+        'simplify_oilfields_data',
+        'simplify_oilwells_data',
+        'simplify_coalmines_data', 
+        'simplify_lngterminals_data', 
+        'simplify_ports_data', 
+        'simplify_cities_data', 
+        'simplify_powerstations_data',
+    ]
+    
+    nodes = [
+            node(
+                post_community_edges,
+                ["vis_parameters","flow_coal_nx_edges"] + PT_ASSETS + ['community_coal_nodes_interim'],
+                ["community_coal_nodes","community_coal_edges","communities_coal"],
+                tags=tags + ["community-post-edges_coal"],
+            ),
+            node(
+                post_community_edges,
+                ["vis_parameters","flow_gas_nx_edges"] + PT_ASSETS + ['community_gas_nodes_interim'],
+                ["community_gas_nodes","community_gas_edges","communities_gas"],
+                tags=tags + ["community-post-edges_gas"],
+            ),
+            node(
+                post_community_edges,
+                ["vis_parameters","flow_oil_nx_edges"] + PT_ASSETS + ['community_oil_nodes_interim'],
+                ["community_oil_nodes","community_oil_edges","communities_oil"],
+                tags=tags + ["community-post-edges_oil"],
             ),
         ]
         

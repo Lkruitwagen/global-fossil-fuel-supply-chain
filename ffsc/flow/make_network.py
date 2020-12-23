@@ -164,12 +164,18 @@ def make_oil_network(
         
     ## trim for oil
     logger.info('Trimming for oil')
+    print ('step 1')
+    print (df_edges_powerstations)
     powerstations_nonoil = df_powerstations.loc[~df_powerstations['features'].apply(lambda el: json.loads(el)['fuel1']=='Oil'),'unique_id'].values
     df_powerstations = df_powerstations[~df_powerstations['unique_id'].isin(powerstations_nonoil)]
+    print ('step 2')
+    print (df_edges_powerstations)
     df_edges_powerstations = df_edges_powerstations[df_edges_powerstations['END'].isin(df_powerstations['unique_id'].values)]
+    print ('step 3')
+    print (df_edges_powerstations)
     df_edges_pipelines_other = df_edges_pipelines_other[~df_edges_pipelines_other['END'].isin(powerstations_nonoil)]
-    print (df_edges_pipelines_other)
-    print (df_edges_pipelines_other['END'].str.split('_').str[0]=='LNGTERMINAL')
+    #print (df_edges_pipelines_other)
+    #print (df_edges_pipelines_other['END'].str.split('_').str[0]=='LNGTERMINAL')
     df_edges_pipelines_other = df_edges_pipelines_other[~(df_edges_pipelines_other['END'].str.split('_').str[0]=='LNGTERMINAL')]
     df_edges_shippingroutes_other = df_edges_shippingroutes_other[~(df_edges_shippingroutes_other['END'].str.split('_').str[0]=='LNGTERMINAL')]
     
@@ -187,8 +193,8 @@ def make_oil_network(
         'pipelines-pipelines':df_edges_pipelines_pipelines.copy(),
         'pipelines-cities':df_edges_pipelines_other[df_edges_pipelines_other['END'].str.split('_').str[0]=='CITY'].copy(),
         'pipelines-powerstations':df_edges_pipelines_other[df_edges_pipelines_other['END'].str.split('_').str[0]=='POWERSTATION'].copy(),
-        'lmports-powerstations': df_edges_powerstations[df_edges_powerstations['START']=='PORT'].copy(),
-        'lmcities-powerstations': df_edges_powerstations[df_edges_powerstations['START']=='CITY'].copy(),
+        'lmports-powerstations': df_edges_powerstations[df_edges_powerstations['START'].str.split('_').str[0]=='PORT'].copy(),
+        'lmcities-powerstations': df_edges_powerstations[df_edges_powerstations['START'].str.split('_').str[0]=='CITY'].copy(),
         'cities-lastmile':df_edges_cities.copy()
     }
     
@@ -294,8 +300,8 @@ def make_gas_network(
         'pipelines-pipelines':df_edges_pipelines_pipelines.copy(),
         'pipelines-cities':df_edges_pipelines_other[df_edges_pipelines_other['END'].str.split('_').str[0]=='CITY'].copy(),
         'pipelines-powerstations':df_edges_pipelines_other[df_edges_pipelines_other['END'].str.split('_').str[0]=='POWERSTATION'].copy(),
-        'lmports-powerstations': df_edges_powerstations[df_edges_powerstations['START']=='PORT'].copy(),
-        'lmcities-powerstations': df_edges_powerstations[df_edges_powerstations['START']=='CITY'].copy(),
+        'lmports-powerstations': df_edges_powerstations[df_edges_powerstations['START'].str.split('_').str[0]=='PORT'].copy(),
+        'lmcities-powerstations': df_edges_powerstations[df_edges_powerstations['START'].str.split('_').str[0]=='CITY'].copy(),
         'cities-lastmile':df_edges_cities.copy()
     }
     
