@@ -327,6 +327,22 @@ def visualise_community_gdfs(params, community_ids, gdfs, ne):
             maxx = extents['maxx'].max() if not np.isnan(extents['maxx'].max()) else 180
             miny = extents['miny'].min() if not np.isnan(extents['miny'].min()) else -90
             maxy = extents['maxy'].max() if not np.isnan(extents['maxy'].max()) else 90
+            
+            AR = 1.6
+            if minx!=-180 or maxx!=180:
+                delX = maxx - minx
+                delY = maxy - miny
+                tryAR = delX/delY
+                print(tryAR, minx,maxx,miny,maxy)
+                if tryAR>AR: # wider then tall; extend y
+                    newdelY = delY*tryAR/AR
+                    maxy += (newdelY-delY)/2
+                    miny -= (newdelY-delY)/2
+                elif tryAR<AR: # taller than wide; extend x
+                    newdelX = delX*AR/tryAR
+                    maxx += (newdelX - delX)/2
+                    minx -= (newdelX - delX)/2
+                print(tryAR, minx,maxx,miny,maxy)
             axs[ii_c].set_xlim([minx, maxx])
             axs[ii_c].set_ylim([miny, maxy])
     plt.savefig(params['path'])
@@ -394,7 +410,9 @@ def visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     )
     visualise_community_gdfs(params, community_ids, gdfs, ne)
 
-def visualise_communities_detail(params, df_nodes, df_edges, df_communities, ne):
+def visualise_communities_detail(params, df_nodes, df_edges, df_flow, df_communities, ne):
+    print (df_nodes)
+    
     if 'COALMINE' in df_nodes['NODETYPE'].unique():
         carrier='coal'
     elif 'LNGTERMINAL' in df_nodes['NODETYPE'].unique():
@@ -403,13 +421,13 @@ def visualise_communities_detail(params, df_nodes, df_edges, df_communities, ne)
         carrier='oil'
         
     logger=logging.getLogger('Visualise communities '+carrier)
-    comm_col = f'comm_{params["community_levels"][carrier]-1}'
+    comm_col = f'comm_{params["community_levels"][carrier]}'
     params['comm_col']=comm_col
     
     logger.info('Loading geometries')
-    df_nodes['geometry'] = df_nodes['geometry'].apply(wkt.loads)
-    df_edges['geometry'] = df_edges['geometry'].apply(wkt.loads)
-    df_communities['geometry'] = df_communities['geometry'].apply(wkt.loads)
+    df_nodes['geometry'] = df_nodes['geometry'].progress_apply(wkt.loads)
+    df_edges['geometry'] = df_edges['geometry'].progress_apply(wkt.loads)
+    #df_communities['geometry'] = df_communities['geometry'].apply(wkt.loads)
     
     
     df_edges['source_type'] = df_edges['source'].str.split('_').str[0]
@@ -425,16 +443,26 @@ def visualise_communities_detail(params, df_nodes, df_edges, df_communities, ne)
     df_nodes = df_nodes[~df_nodes['NODETYPE'].isin(['RAILWAY','PIPELINE','SHIPPINGROUTE'])]
     df_nodes['color_key'] = df_nodes['NODETYPE']
     
-    df_communities = df_communities.sort_values('N_NODES')
+    ### merge flow to communi
+    df_flow = df_flow.rename(columns={'SOURCE':'source','TARGET':'target'})
+    df_flow = pd.merge(df_flow, df_nodes[['NODE',comm_col]], how='left',left_on='target',right_on='NODE').rename(columns={comm_col:'target_comm'})
+    
+    df_edges = pd.merge(df_edges.set_index(['source','target']), df_flow.set_index(['source','target'])[['flow']], how='left',left_index=True,right_index=True).reset_index()
+    
+    df_communities = pd.merge(df_communities, 
+         df_edges.loc[df_edges['source_comm']==df_edges['target_comm'],['target_comm','flow']].groupby('target_comm').sum(), 
+         how='left',left_index=True, right_index=True)
+    
+    df_communities = df_communities.sort_values('flow')
     
     ### what to vis
-    # top largest
+    # top largest N
     logger.info(f'Doing {params["vis_N_communities"]} largest')
-    community_ids = df_communities.iloc[-1*params['vis_N_communities']:].index.values
+    community_ids = df_communities.sort_values('N_NODES').iloc[-1*params['vis_N_communities']:].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
-    # smallest
+    # smallest N
     logger.info(f'Doing {params["vis_N_communities"]} smallest')
     community_ids = df_communities.iloc[:params['vis_N_communities']].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest.png')
@@ -442,50 +470,62 @@ def visualise_communities_detail(params, df_nodes, df_edges, df_communities, ne)
     
     # top supply
     logger.info(f'Doing {params["vis_N_communities"]} largest - supply')
-    community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==False),:].iloc[-1*params['vis_N_communities']:].index.values
+    #community_ids = df_communities.sort_values('N_NODES').loc[(df_communities['supply']==True)&(df_communities['demand']==False),:].iloc[-1*params['vis_N_communities']:].index.values
+    community_ids = df_flow \
+                        .loc[df_flow['source']=='supersource',['target_comm','flow']] \
+                        .groupby('target_comm') \
+                        .sum() \
+                        .sort_values('flow') \
+                        .iloc[-1*params["vis_N_communities"]:].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_supply.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
     # smallest supply
     logger.info(f'Doing {params["vis_N_communities"]} smallest - supply')
-    community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==False),:].iloc[:params['vis_N_communities']].index.values
+    community_ids = df_flow \
+                        .loc[df_flow['source']=='supersource',['target_comm','flow']] \
+                        .groupby('target_comm') \
+                        .sum() \
+                        .sort_values('flow') \
+                        .iloc[:params["vis_N_communities"]].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_supply.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
     # top demand
     logger.info(f'Doing {params["vis_N_communities"]} largest - demand')
-    community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==True),:].iloc[-1*params['vis_N_communities']:].index.values
+    community_ids = df_nodes[[comm_col,'D']].groupby(comm_col).sum().sort_values('D').iloc[-1*params['vis_N_communities']:].index.values
+    #community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==True),:].iloc[-1*params['vis_N_communities']:].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_demand.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
     # smallest_ demand
     logger.info(f'Doing {params["vis_N_communities"]} smallest - demand')
-    community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==True),:].iloc[:params['vis_N_communities']].index.values
+    community_ids = df_nodes[[comm_col,'D']].groupby(comm_col).sum().sort_values('D').iloc[:params['vis_N_communities']].index.values 
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_demand.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
-    # top transmission
+    # top transmission flow
     logger.info(f'Doing {params["vis_N_communities"]} largest - transmission')
     community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==False),:].iloc[-1*params['vis_N_communities']:].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_transmission.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
-    # smallest transmission
+    # smallest transmission flow
     logger.info(f'Doing {params["vis_N_communities"]} smallest - transmission')
     community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==False),:].iloc[:params['vis_N_communities']].index.values
     params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_transmission.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
-    # top supple+demand
+    # top supple+demand flow
     logger.info(f'Doing {params["vis_N_communities"]} largest - supply+demand')
     community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==True),:].iloc[-1*params['vis_N_communities']:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_transmission.png')
+    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_sup+dem.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
     # smallest supply+demand
     logger.info(f'Doing {params["vis_N_communities"]} smallest - supply+demand')
     community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==True),:].iloc[:params['vis_N_communities']].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_transmission.png')
+    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_sup+dem.png')
     visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
     
     return []

@@ -924,3 +924,15 @@ flow_oil_iso2:
 flow_gas_iso2:
   type: kedro.extras.datasets.pandas.ParquetDataSet
   filepath: results/interdiction/flow_gas_iso2.pqt
+  
+coal_nodeflags:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal_nodeflags.pqt
+  
+coal_reachable:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal_reachable.pqt
+  
+coal_dijkstra_pairs:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal_dijkstra_pairs.pqt

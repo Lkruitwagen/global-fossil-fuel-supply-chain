@@ -38,6 +38,14 @@ from ffsc.interdiction.interdiction_methods import (
     interdiction_community_coal,
     interdiction_community_oil,
     interdiction_community_gas,
+    interdiction_community,
+    interdiction_community_parse,
+)
+from ffsc.interdiction.dijkstra_methods import (
+    dijkstra_prep_paths,
+    dijkstra_parse_paths,
+    dijkstra_shortest_allpairs,
+    dijkstra_filter_reachable,
 )
 
 def get_pipeline(tag=None):
@@ -56,6 +64,11 @@ def get_pipeline(tag=None):
         interdiction_baseline_call_pl()
         + interdiction_baseline_parse_pl()
         + interdiction_community_pl()
+        + interdiction_community_parse_pl()
+        + dijkstra_prep_paths_pl()
+        + dijkstra_parse_paths_pl()
+        + dijkstra_reachable_pl()
+        + dijkstra_shortest_paths_pl()
     )
     
     if tag:
@@ -66,6 +79,66 @@ def get_pipeline(tag=None):
         
     else:
         return data_science_pipeline
+    
+################################
+### new interdiction methods ###
+################################
+
+def dijkstra_prep_paths_pl(**kwargs):
+    tags = ["dijkstra-prep"]
+    
+    nodes = [
+        node(
+            dijkstra_prep_paths,
+            ['community_coal_nodes', 'flow_coal_nx_edges', 'flow_parameters'],
+            [],
+            tags = tags + ['dijkstra-prep_coal']
+        )
+    ]
+    
+    return Pipeline(nodes)
+
+def dijkstra_parse_paths_pl(**kwargs):
+    tags = ["dijkstra-parse"]
+    
+    nodes = [
+        node(
+            dijkstra_parse_paths,
+            ['community_coal_nodes', 'flow_parameters'],
+            'coal_nodeflags',
+            tags = tags + ['dijkstra-parse_coal']
+        )
+    ]
+    
+    return Pipeline(nodes)
+
+def dijkstra_reachable_pl(**kwargs):
+    tags = ["dijkstra-reachable"]
+    
+    nodes = [
+        node(
+            dijkstra_filter_reachable,
+            ['community_coal_nodes', 'flow_parameters'],
+            'coal_reachable',
+            tags = tags + ['dijkstra-reachable_coal']
+        )
+    ]
+    
+    return Pipeline(nodes)
+
+def dijkstra_shortest_paths_pl(**kwargs):
+    tags = ["dijkstra-shortest"]
+    
+    nodes = [
+        node(
+            dijkstra_shortest_allpairs,
+            ['community_coal_nodes', 'flow_coal_nx_edges', 'coal_nodeflags', 'coal_reachable', 'flow_parameters'], 
+            'coal_dijkstra_pairs',
+            tags = tags + ['dijkstra-shortest_coal']
+        )
+    ]
+    
+    return Pipeline(nodes)
 
 
 def interdiction_baseline_call_pl(**kwargs):
@@ -104,22 +177,49 @@ def interdiction_community_pl(**kwargs):
     
     nodes = [
         node(
-            interdiction_community_coal,
-            ["flow_parameters"],
+            interdiction_community,
+            ["community_coal_nodes", "community_coal_edges", "communities_coal", "flow_baseline_coal", "flow_parameters"],
             [],
             tags = tags + ["interdiction-community_coal"]
         ),
         node(
-            interdiction_community_oil,
-            ["flow_parameters"],
+            interdiction_community,
+            ["community_oil_nodes", "community_oil_edges", "communities_oil", "flow_baseline_oil", "flow_parameters"],
             [],
             tags = tags + ["interdiction-community_oil"]
         ),
         node(
-            interdiction_community_gas,
-            ["flow_parameters"],
+            interdiction_community,
+            ["community_gas_nodes", "community_gas_edges", "communities_gas", "flow_baseline_gas", "flow_parameters"],
             [],
             tags = tags + ["interdiction-community_gas"]
+        ),
+    ]
+    
+    return Pipeline(nodes)
+
+def interdiction_community_parse_pl(**kwargs):
+    
+    tags = ["interdiction-community-parse"]
+    
+    nodes = [
+        node(
+            interdiction_community_parse,
+            ["community_coal_nodes"],
+            [],
+            tags = tags + ["interdiction-community-parse_coal"]
+        ),
+        node(
+            interdiction_community_parse,
+            ["community_oil_nodes"],
+            [],
+            tags = tags + ["interdiction-community-parse_oil"]
+        ),
+        node(
+            interdiction_community_parse,
+            ["community_gas_nodes"],
+            [],
+            tags = tags + ["interdiction-community-parse_gas"]
         ),
     ]
     
