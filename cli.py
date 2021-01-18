@@ -20,21 +20,21 @@ kedro_catalog = DataCatalog.from_config(catalog)
 #runner.run(pipeline, kedro_catalog)
 #exit()
 
-"""
+
 ### Do Vis
-pipeline = get_visualise_pipeline(["visualise-trade_coal"])
+pipeline = get_visualise_pipeline(['compare-flow_oil'])
 runner = SequentialRunner()
 runner.run(pipeline, kedro_catalog)
 exit()
+
+
 """
-
-
 ### Do an interdiction
-pipeline = get_interdiction_pipeline(["dijkstra-shortest_coal"]) # flow-nodes, flow-solve
+pipeline = get_interdiction_pipeline(["counterfactual_oil"])#["dijkstra-genetic_gas"])#'dijkstra-paths_oil'])#])#'dijkstra-pickle_oil']) # flow-nodes, flow-solve
 runner = SequentialRunner()
 runner.run(pipeline,kedro_catalog)
 exit()
-
+"""
 
 """
 ### Do the communities

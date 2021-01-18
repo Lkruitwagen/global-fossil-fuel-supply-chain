@@ -30,7 +30,7 @@ coal_trade:
   type: kedro.extras.datasets.pandas.CSVDataSet
   filepath: data/trade_balances/coal_trade.csv
   
-gas_Trade:
+gas_trade:
   type: kedro.extras.datasets.pandas.CSVDataSet
   filepath: data/trade_balances/gas_trade.csv
   
@@ -46,6 +46,10 @@ oil_trade:
 iso2:
   type: kedro.extras.datasets.pandas.CSVDataSet
   filepath: data/iso2.csv
+  
+sds2040:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/sds2040.csv
 
 raw_shippingroutes_data:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
@@ -933,6 +937,38 @@ coal_reachable:
   type: kedro.extras.datasets.pandas.ParquetDataSet
   filepath: results/interdiction/dijkstra_paths/coal_reachable.pqt
   
-coal_dijkstra_pairs:
+coal_dijkstra_mincost_adj:
   type: kedro.extras.datasets.pandas.ParquetDataSet
-  filepath: results/interdiction/dijkstra_paths/coal_dijkstra_pairs.pqt
+  filepath: results/interdiction/dijkstra_paths/coal/dijkstra_mincost_adj.pqt
+
+gas_dijkstra_mincost_adj:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/gas/dijkstra_mincost_adj.pqt
+  
+oil_dijkstra_mincost_adj:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/oil/dijkstra_mincost_adj.pqt
+  
+flow_dijkstra_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_coal.pqt
+  
+flow_dijkstra_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_gas.pqt
+  
+flow_dijkstra_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_oil.pqt
+  
+flow_sds_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_coal.pqt
+  
+flow_sds_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_gas.pqt
+  
+flow_sds_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_oil.pqt

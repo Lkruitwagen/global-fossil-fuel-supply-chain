@@ -1,4 +1,4 @@
-import yaml
+import yaml, os
 from math import pi
 
 SEACOST = 800/9000/28
@@ -28,7 +28,14 @@ params = dict(
             LNG_TRANSFER =  1000*_cap_factor(25) + 0.6 / 1.055 * 52 + 4/1.055*52 *0.15,  # $/t + 4$/mmbtu / 1.055 -> x$/GJ * 52GJ/t
             check_paths = True,
             COMMUNITY_LEVEL={'coal':7,'oil':9,'gas':9},
-            constrain_production = False,
+            constrain_production = True,
+            run_constrained = False,
+            flowfill_run = {
+                'coal':os.path.join(os.getcwd(),'results','interdiction','dijkstra_flow','coal','genetic','113.pkl'),
+                'gas':os.path.join(os.getcwd(),'results','interdiction','dijkstra_flow','gas','genetic','0.pkl'),
+                'oil':os.path.join(os.getcwd(),'results','interdiction','dijkstra_flow','oil','genetic','0.pkl'),
+                
+            },
 )
 
 yaml.dump(params, open('./conf/base/flow_parameters.yml','w'))

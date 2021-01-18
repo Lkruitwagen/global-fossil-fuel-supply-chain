@@ -32,8 +32,11 @@
 from typing import Dict
 from kedro.pipeline import Pipeline, node
 
-from ffsc.visualise.visualise import (
+from ffsc.visualise.visualise_communities import (
     visualise_communities_detail,
+    visualise_communities_blobs,
+)
+from ffsc.visualise.visualise import (
     visualise_flow,
     visualise_assets_coal,
     visualise_assets_oil,
@@ -41,10 +44,10 @@ from ffsc.visualise.visualise import (
     visualise_assets_simplified_coal,
     visualise_assets_simplified_oil,
     visualise_assets_simplified_gas,
-    visualise_communities_blobs,
-    visualise_trade,
+    visualise_trade_arrows,
     node_iso2,
     flow2iso2adj,
+    compare_flow,
 )
 
 PT_ASSETS = [
@@ -88,6 +91,7 @@ def get_pipeline(tag=None):
         + node_iso2_pl()
         + vis_trade_prep_pl()
         + vis_flow_pl()
+        + vis_compare_flow_pl()
     )
     
     if tag:
@@ -216,19 +220,19 @@ def vis_trade_prep_pl(**kwargs):
     nodes = [
         node(
             flow2iso2adj,
-            ["iso2", "flow_baseline_coal", "community_coal_iso2"],
+            ["iso2", "flow_dijkstra_coal", "community_coal_iso2"],
             "flow_coal_iso2",
             tags=tags + ["visualise-trade-prep_coal"]
         ),
         node(
             flow2iso2adj,
-            ["iso2", "flow_baseline_oil", "community_oil_iso2"],
+            ["iso2", "flow_dijkstra_oil", "community_oil_iso2"],
             "flow_oil_iso2",
             tags=tags + ["visualise-trade-prep_oil"]
         ),
         node(
             flow2iso2adj,
-            ["iso2", "flow_baseline_gas", "community_gas_iso2"],
+            ["iso2", "flow_dijkstra_gas", "community_gas_iso2"],
             "flow_gas_iso2",
             tags=tags + ["visualise-trade-prep_gas"]
         ),
@@ -242,20 +246,20 @@ def vis_trade_pl(**kwargs):
     
     nodes = [
         node(
-            visualise_trade,
-            ["iso2", "ne", "global_energy_production", "coal_trade", "flow_coal_iso2"],
+            visualise_trade_arrows,
+            ["iso2", "ne", "flow_parameters", "global_energy_production", "coal_trade"],
             [],
             tags=tags + ["visualise-trade_coal"]
         ),
         node(
-            visualise_trade,
-            ["iso2", "ne", "global_energy_production", "oil_trade", "flow_oil_iso2"],
+            visualise_trade_arrows,
+            ["iso2", "ne", "flow_parameters", "global_energy_production", "oil_trade"],
             [],
             tags=tags + ["visualise-trade_oil"]
         ),
         node(
-            visualise_trade,
-            ["iso2", "ne", "global_energy_production", "gas_trade", "flow_gas_iso2"],
+            visualise_trade_arrows,
+            ["iso2", "ne", "flow_parameters", "global_energy_production", "gas_trade"],
             [],
             tags=tags + ["visualise-trade_gas"]
         ),
@@ -283,21 +287,47 @@ def vis_flow_pl(**kwargs):
     nodes = [
         node(
             visualise_flow,
-            ["vis_parameters", "ne", "flow_baseline_coal", "community_coal_edges", "community_coal_nodes"],
+            ["vis_parameters", "ne", "flow_dijkstra_coal", "community_coal_edges", "community_coal_nodes"],
             [],
             tags = tags+['visualise-flow_coal']
         ),
         node(
             visualise_flow,
-            ["vis_parameters", "ne", "flow_baseline_oil", "community_oil_edges", "community_oil_nodes"],
+            ["vis_parameters", "ne", "flow_dijkstra_oil", "community_oil_edges", "community_oil_nodes"],
             [],
             tags = tags+['visualise-flow_oil']
         ),
         node(
             visualise_flow,
-            ["vis_parameters", "ne", "flow_baseline_gas", "community_gas_edges", "community_gas_nodes"],
+            ["vis_parameters", "ne", "flow_dijkstra_gas", "community_gas_edges", "community_gas_nodes"],
             [],
             tags = tags+['visualise-flow_gas']
+        )
+    ]
+    
+    return Pipeline(nodes)
+
+def vis_compare_flow_pl(**kwargs):
+    tags = ['compare-flow']
+    
+    nodes = [
+        node(
+            compare_flow,
+            ["vis_parameters", "ne", "flow_dijkstra_coal", "flow_sds_coal", "community_coal_edges", "community_coal_nodes"],
+            [],
+            tags = tags+['compare-flow_coal']
+        ),
+        node(
+            compare_flow,
+            ["vis_parameters", "ne", "flow_dijkstra_oil",  "flow_sds_oil", "community_oil_edges", "community_oil_nodes"],
+            [],
+            tags = tags+['compare-flow_oil']
+        ),
+        node(
+            compare_flow,
+            ["vis_parameters", "ne", "flow_dijkstra_gas", "flow_sds_gas",  "community_gas_edges", "community_gas_nodes"],
+            [],
+            tags = tags+['compare-flow_gas']
         )
     ]
     
