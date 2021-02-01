@@ -327,7 +327,7 @@ def explode_pipeline(**kwargs):
         node(
             explode_edges_shippingroutes,
             ['flmile_shippingroutes_data']+SHIPPINGROUTES_EDGES + ['flmile_idl_edges'],
-            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes','explode_keepnodes_shippingroutes','explode_edges_shippingroutes_other', 'explode_edges_other_shippingroutes'],
+            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes','explode_keepnodes_shippingroutes','explode_edges_shippingroutes_other'],
             tags=tags+['explode_edges','explode_edges_shippingroutes']
         ),
     ]
@@ -348,6 +348,14 @@ def explode_pipeline(**kwargs):
              tags=tags+['explode_null',f'explode_null_{sector}']
             )
         for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+             f'flmile_edges_cities',
+             f'explode_edges_cities',
+             tags=tags+['explode_null',f'explode_null_cities']
+        )
     ]
     
 
@@ -380,22 +388,11 @@ def simplify_pipeline(**kwargs):
         ),
     ]
     
-
-    
     null_nodes = [
-        node(null_forward, 
-             f'explode_edges_{sector1}_{sector2}', 
-             f'simplify_edges_{sector1}_{sector2}', 
-             tags=tags+['null',f'null_{sector1}_{sector2}']
-            )
-        for sector1, sector2 in SJOIN_PAIRS
-    ]
-    
-    null_nodes += [
         node(null_forward,
              f'explode_{sector}_data',
              f'simplify_{sector}_data',
-             tags=tags+['null',f'null_{sector}']
+             tags=tags+['simplify_null',f'null_{sector}']
             )
         for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
     ]
@@ -404,17 +401,27 @@ def simplify_pipeline(**kwargs):
         node(null_forward,
              f'explode_edges_{sector}',
              f'simplify_edges_{sector}',
-             tags=tags+['null',f'null_edges_{sector}']
+             tags=tags+['simplify_null',f'null_edges_{sector}']
             )
         for sector in ['oilfields','oilwells','coalmines','cities','powerstations']
     ]
     
     null_nodes += [
         node(null_forward,
-            'explode_idl_edges',
-            'simplify_idl_edges',
-            tags=tags+['null']
-        )
+             f'explode_edges_other_{sector}',
+             f'simplify_edges_other_{sector}',
+             tags=tags+['simplify_null',f'simplify_null_edges_{sector}']
+            )
+        for sector in ['pipelines','railways']
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+             f'explode_edges_{sector}_other',
+             f'simplify_edges_{sector}_other',
+             tags=tags+['simplify_null',f'simplify_null_edges_{sector}']
+            )
+        for sector in ['pipelines','railways','shippingroutes']
     ]
     
     return Pipeline(simplify_nodes+null_nodes)

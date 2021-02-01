@@ -3,6 +3,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 from itertools import chain
 
 import pandas as pd
+import numpy as np
 from shapely import geometry, wkt, ops
 from tqdm import tqdm
 tqdm.pandas()
@@ -50,7 +51,10 @@ def explode_edges_shippingroutes(df, edge_df1, edge_df2, IDL_edges):
 
     edge_df = pd.concat([edge_df, IDL_edges[['START','END','DISTANCE']]])
     
-    return node_df, edge_df, keep_df,edge_df_shippingroutes_other, edge_df_other_shippingroutes
+    logger.info(f'Only keep shippingedges to ports/lng')
+    edge_df_shippingroutes_other = edge_df_shippingroutes_other[edge_df_shippingroutes_other['END'].str.split('_').str[0]!='SHIPPINGROUTE']
+    
+    return node_df, edge_df, keep_df, edge_df_shippingroutes_other
     
 def explode_edges_linear(df, edge_df_linear_other, edge_df_other_linear, linear_name, logger):
     
@@ -75,10 +79,96 @@ def explode_edges_linear(df, edge_df_linear_other, edge_df_other_linear, linear_
     
     # cast to geometries
     logger.info(f'Casting to geometries')
-    df['geometry'] = df['geometry'].progress_apply(lambda el: wkt.loads(el))
+    df['geometry'] = df['geometry'].progress_apply(lambda el: wkt.loads(wkt.dumps(wkt.loads(el), rounding_precision=4)))
     df['NEAREST_PTS'] = df['NEAREST_PTS'].apply(lambda d: d if isinstance(d, list) else [])
     #print (df['NEAREST_PTS'])
-    df['multipoint'] = df['NEAREST_PTS'].progress_apply(lambda el: geometry.MultiPoint([wkt.loads(pt) for pt in el])) # dies on NAN
+    
+    #logger.info(f'Getting multipoints')
+    #df['multipoint'] = df['NEAREST_PTS'].progress_apply(lambda el: geometry.MultiPoint([wkt.loads(wkt.dumps(wkt.loads(pt),rounding_precision=4)) for pt in el])) # dies on NAN
+    
+    #logger.info('splitting geometry')
+    #df['geometry'] = df.progress_apply(lambda row: list(ops.split(row['geometry'],row['multipoint'])) if not row['multipoint'].is_empty else [row['geometry']], axis=1)
+    
+    
+    
+    
+    """
+    rematch_pts = []
+    
+    def align_pts(row):
+        row_pts = []
+        for pt_str in row['NEAREST_PTS']:
+            pt = wkt.loads(pt_str)
+            if not pt.intersects(row['geometry']): # does not intersect?
+                # project
+                ip = row['geometry'].interpolate(row['geometry'].project(pt))
+                rematch_pts.append((row['unique_id'],format_pt((pt.x, pt.y), linear_name), format_pt((ip.x, ip.y), linear_name)))
+                row_pts.append(ip)
+            else:
+                row_pts.append(pt)
+        return geometry.MultiPoint(row_pts)
+    
+    logger.info('snapping pts if necessary')
+    #df['multipoint'] = df['NEAREST_PTS'].progress_apply(lambda el: geometry.MultiPoint([wkt.loads(pt) for pt in el])) # dies on NAN
+    df['multipoint'] = df.progress_apply(lambda row: align_pts(row), axis=1)
+    
+    replace_df = pd.DataFrame(rematch_pts,columns=['unique_id','pt_str','new_pt'])
+    
+    # ops.split
+    logger.info(f'Calling ops.split on geometries with multipoints')
+    
+    def split_row(row):
+        if not row['multipoint'].is_empty:
+            print ('GEOM',row['geometry'])
+            print ('MULTIPT',row['multipoint'])
+            print ('SPLIT',list(ops.split(row['geometry'], row['multipoint'])))
+            return list(ops.split(row['geometry'],row['multipoint']))
+        else:
+            return [row['geometry']]
+    
+    df['geometry'] = df.progress_apply(lambda row: split_row(row), axis=1)
+    """
+    rematch_pts = []
+
+    def align_and_split(row):
+        row_pts = []
+        for pt_str in row['NEAREST_PTS']:
+            pt = wkt.loads(wkt.dumps(wkt.loads(pt_str), rounding_precision=4))
+            
+            if not pt.intersects(row['geometry']): # does not intersect?
+                # project
+                ip = row['geometry'].interpolate(np.round(row['geometry'].project(pt),-4))
+                rematch_pts.append((row['unique_id'],format_pt((pt.x, pt.y), linear_name), format_pt((ip.x, ip.y), linear_name)))
+                row_pts.append(ip)
+                #print ('intersects? NO',pt_str, ip.intersects(row['geometry']),'ip',ip)
+            else:
+                row_pts.append(pt)
+                #print ('intersects? YES',pt_str, pt.intersects(row['geometry']),'pt',pt)
+                
+        mp = geometry.MultiPoint(row_pts)
+        
+        if not mp.is_empty:
+            if mp.intersects(row['geometry']):
+                #print ('intersects', row['geometry'], row['NEAREST_PTS'])
+                #print ('SPLIT',list(ops.split(row['geometry'], row['multipoint'])))
+                return [mp,list(ops.split(row['geometry'],mp))]
+            else:
+                print ('ERROR!! No intersect!',row['NEAREST_PTS'], mp.wkt, row['geometry'].wkt)
+        else:
+            return [mp,[row['geometry']]]
+        
+
+    
+    logger.info('align and split')
+    
+    df['placekeeper'] = df.progress_apply(lambda row: align_and_split(row), axis=1)
+    df['multipoint'] = df['placekeeper'].str[0]
+    df['geometry'] = df['placekeeper'].str[1]
+
+    replace_df = pd.DataFrame(rematch_pts,columns=['unique_id','pt_str','new_pt'])
+    
+    print ('replace_df')
+    print (replace_df)
     
     # Keep the multipoints
     logger.info('Getting the multipoint keep nodes')
@@ -88,9 +178,7 @@ def explode_edges_linear(df, edge_df_linear_other, edge_df_other_linear, linear_
     #print ('keepnodes',keep_df)
     #print (df['multipoint'].apply(lambda el: el.type).unique())
     
-    # ops.split
-    logger.info(f'Calling ops.split on geometries with multipoints')
-    df['geometry'] = df.progress_apply(lambda row: list(ops.split(row['geometry'],row['multipoint'])) if not row['multipoint'].is_empty else [row['geometry']], axis=1)
+    #df['geometry'] = df.progress_apply(lambda row: list(ops.split(row['geometry'],row['multipoint'])) if not row['multipoint'].is_empty else [row['geometry']], axis=1)
     
     # explode
     logger.info(f'Exploding split geometries')
@@ -121,7 +209,26 @@ def explode_edges_linear(df, edge_df_linear_other, edge_df_other_linear, linear_
     edge_df_linear_other['START'] = edge_df_linear_other['NEAREST_PT'].progress_apply(lambda el: format_pt((wkt.loads(el).x, wkt.loads(el).y), linear_name))
     edge_df_other_linear['END']  = edge_df_other_linear['NEAREST_PT'].progress_apply(lambda el: format_pt((wkt.loads(el).x, wkt.loads(el).y), linear_name))
     
-    return node_df, edge_df, keep_df, edge_df_linear_other, edge_df_other_linear
+    edge_df_linear_other = pd.merge(edge_df_linear_other, replace_df, how='left', left_on='START',right_on='pt_str')
+    edge_df_linear_other['new_pt'] = edge_df_linear_other['new_pt'].fillna(edge_df_linear_other['START'])
+    edge_df_linear_other = edge_df_linear_other.drop(columns=['START']).rename(columns={'new_pt':'START'})#.drop(columns=['new_pt','pt_str'])
+    
+    edge_df_other_linear = pd.merge(edge_df_other_linear, replace_df, how='left', left_on='END',right_on='pt_str')
+    edge_df_other_linear['new_pt'] = edge_df_other_linear['new_pt'].fillna(edge_df_other_linear['END'])
+    edge_df_other_linear = edge_df_other_linear.drop(columns=['END']).rename(columns={'new_pt':'END'})#.drop(columns=['new_pt','pt_str'])
+    
+    logger.info('check all of keep in nodes')
+    print (keep_df)
+    print (edge_df_linear_other)
+    print (edge_df_other_linear)
+    
+    print ('keep in nodes',keep_df[keep_df['KEEP_NODES'].isin(node_df['NODES'])])
+    
+    logger.info('Check in nodes')
+    print ('start in nodes', edge_df_linear_other[edge_df_linear_other['START'].isin(node_df['NODES'])])
+    print ('end in nodes', edge_df_other_linear[edge_df_other_linear['END'].isin(node_df['NODES'])])
+    
+    return node_df, edge_df, keep_df, edge_df_linear_other[['START','END','DISTANCE']], edge_df_other_linear[['START','END','DISTANCE']]
     
     
 def drop_linear(df):
