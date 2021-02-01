@@ -1,3 +1,7 @@
+COMMUNITY_LEVEL:
+  coal: 7
+  gas: 9
+  oil: 9
 GAS_PIPELINE: 0.0067845888556995184
 LNG_TRANSFER: 159.29971233129862
 OIL_PIPELINE: 0.01286781454766686
@@ -7,10 +11,12 @@ ROADCOST: 0.006349206349206349
 ROADLOAD: 5.714285714285715
 SEACOST: 0.0031746031746031746
 SEALOAD: 1.4285714285714288
-N_WORKERS: 6
-COMMUNITY_LEVEL: -1
 check_paths: true
 constrain_production: true
+flowfill_run:
+  coal: /data/global-fossil-fuel-supply-chain/results/interdiction/dijkstra_flow/coal/genetic/113.pkl
+  gas: /data/global-fossil-fuel-supply-chain/results/interdiction/dijkstra_flow/gas/genetic/0.pkl
+  oil: /data/global-fossil-fuel-supply-chain/results/interdiction/dijkstra_flow/oil/genetic/0.pkl
 run_constrained: false
 tperTJ:
   coal: 34.129692832764505

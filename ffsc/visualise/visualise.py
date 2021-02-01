@@ -12,6 +12,10 @@ import numpy as np
 
 from shapely import geometry, wkt, ops
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.patches import FancyBboxPatch
 from ffsc.pipeline.nodes.utils import V_inv
 
 import networkx as nx
@@ -27,6 +31,9 @@ def visualise_gpd(params, gdfs, ne, logger):
     
     for dd in gdfs:
         logger.info(f'plotting {dd["type"]} {dd["color_key"]}')
+        if dd['type']=='lin_asset':
+            dd['gdf']['len'] = dd['gdf']['geometry'].apply(lambda geom: geom.length)
+            dd['gdf'] = dd['gdf'][dd['gdf']['len']<345]
         dd['gdf'].plot(
             ax=ax, 
             color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors'][dd['color_key']]),
@@ -231,11 +238,17 @@ def visualise_flow(params, ne, df_flow, df_community_edges, df_community_nodes):
     
     logger.info('prepping DFs')
     df_community_nodes = df_community_nodes[~df_community_nodes['NODETYPE'].isin(['RAILWAY','PIPELINE','SHIPPINGROUTE'])]
+    print ('nodes')
+    print (df_community_nodes)
     df_flow = df_flow.rename(columns={'SOURCE':'source','TARGET':'target'})
     df_flow = df_flow.set_index(['source','target'])
+    print ('df_flow')
+    print (df_flow)
     df_community_edges['source_type'] = df_community_edges['source'].str.split('_').str[0]
     df_community_edges['target_type'] = df_community_edges['target'].str.split('_').str[0]
     df_community_edges = df_community_edges.set_index(['source','target'])
+    print ('df edges')
+    print (df_community_edges)
     df_community_edges = pd.merge(df_community_edges, df_flow[['flow']], how='left', left_index=True, right_index=True)
     
     logger.info('mapping geometries')
@@ -270,6 +283,11 @@ def visualise_flow(params, ne, df_flow, df_community_edges, df_community_nodes):
     
     df_community_edges = df_community_edges[df_community_edges['flow']>0]
     
+    
+    # get rid of the ones that are super long
+    df_community_edges['len'] = df_community_edges['geometry'].apply(lambda geom: geom.length)
+    df_community_edges = df_community_edges[df_community_edges['len']<350]
+    
     #cast to gdf
     df_community_nodes = gpd.GeoDataFrame(df_community_nodes, geometry='geometry')
     df_community_edges = gpd.GeoDataFrame(df_community_edges, geometry='geometry')
@@ -296,237 +314,138 @@ def visualise_flow(params, ne, df_flow, df_community_edges, df_community_nodes):
     return []
 
 
-def visualise_community_gdfs(params, community_ids, gdfs, ne):
+def compare_flow(params, ne, df_flow_bl, df_flow_cf, df_community_edges, df_community_nodes):
     
-    fig, axs = plt.subplots(len(community_ids)//5,min(5,len(community_ids)),figsize=(12*min(5,len(community_ids)),len(community_ids)//5*12))
-    axs = axs.flatten()
-    
-    params['type_style']['ne']['edgecolor']='white'
-    
-    for ii_c, community_id in enumerate(community_ids):
-        ne.plot(ax=axs[ii_c], color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['ne']), **params['type_style']['ne'])
-        
-        extents = []
-        
-        for dd in gdfs[community_id]:
-            dd['gdf'].plot(
-                ax=axs[ii_c], 
-                color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors'][dd['color_key']]),
-                **params['type_style'][dd['type']]
-            )
-            if len(dd['gdf'])>0:
-                extents.append(dd['gdf'].bounds)
-            #if dd['type']=='edges':
-            #    print ('edges',dd['gdf'])
-        
-        if len(extents)>0:
-            extents = pd.concat(extents)
-
-
-            minx = extents['minx'].min() if not np.isnan(extents['minx'].min()) else -180
-            maxx = extents['maxx'].max() if not np.isnan(extents['maxx'].max()) else 180
-            miny = extents['miny'].min() if not np.isnan(extents['miny'].min()) else -90
-            maxy = extents['maxy'].max() if not np.isnan(extents['maxy'].max()) else 90
-            
-            AR = 1.6
-            if minx!=-180 or maxx!=180:
-                delX = maxx - minx
-                delY = maxy - miny
-                tryAR = delX/delY
-                print(tryAR, minx,maxx,miny,maxy)
-                if tryAR>AR: # wider then tall; extend y
-                    newdelY = delY*tryAR/AR
-                    maxy += (newdelY-delY)/2
-                    miny -= (newdelY-delY)/2
-                elif tryAR<AR: # taller than wide; extend x
-                    newdelX = delX*AR/tryAR
-                    maxx += (newdelX - delX)/2
-                    minx -= (newdelX - delX)/2
-                print(tryAR, minx,maxx,miny,maxy)
-            axs[ii_c].set_xlim([minx, maxx])
-            axs[ii_c].set_ylim([miny, maxy])
-    plt.savefig(params['path'])
-
-def visualise_communities_do_slice(community_ids, node_slice, edge_slice, params):
-    """ return a list of gdf specs"""
-    
-    gdfs = {}
-    for community_id in community_ids:
-        gdfs[community_id] = []
-        for kk in node_slice['color_key'].unique().tolist() + edge_slice['color_key'].unique().tolist():
-            #print (kk,'edges', edge_slice[(edge_slice['color_key']==kk) & (edge_slice['source_comm']==community_id) & (edge_slice['target_comm']==community_id)])
-            gdfs[community_id].append(
-                {
-                    'gdf':gpd.GeoDataFrame(node_slice[(node_slice['color_key']==kk)&(node_slice[params['comm_col']]==community_id)], geometry='geometry'),
-                    'color_key':kk,
-                    'type':'pt_asset'
-                }
-            )
-            gdfs[community_id].append(
-                {
-                    
-                    'gdf':gpd.GeoDataFrame(edge_slice[(edge_slice['color_key']==kk) & (edge_slice['source_comm']==community_id) & (edge_slice['target_comm']==community_id)], geometry='geometry'),
-                    'color_key':kk,
-                    'type':'edges'       
-                }
-            )
-            
-    return gdfs
-
-def visualise_communities_blobs(df_communities, ne, params):
-    
-    all_node_types = df_communities[['NODE_TYPES']].explode('NODE_TYPES')['NODE_TYPES'].unique()
-    
-    
-    if 'COALMINE' in all_node_types:
+    # get carrier
+    if 'COALMINE' in df_community_nodes['NODETYPE'].unique():
         carrier='coal'
-    elif 'LNGTERMINAL' in all_node_types:
+        carrier_supplytypes = ['COALMINE']
+    elif 'LNGTERMINAL' in df_community_nodes['NODETYPE'].unique():
         carrier='gas'
+        carrier_supplytypes = ['OILFIELD','OILWELL']
     else:
         carrier='oil'
+        carrier_supplytypes = ['OILFIELD','OILWELL']
         
-    logger = logging.getLogger(f'Visualise community blobs {carrier}')
-    logger.info('loading geoetries')
-    df_communities['geometry'] = df_communities['geometry'].apply(wkt.loads)
-    df_communities['convex_hull'] = df_communities['geometry'].apply(lambda el: el.convex_hull)
-    gdf = gpd.GeoDataFrame(df_communities, geometry='convex_hull')
+    logger = logging.getLogger(f'visualise flow: {carrier}')
+    writer = logging.getLogger(f'writer_{carrier}')
+    fh = logging.FileHandler(f'compare_{carrier}.log')
+    fh.setLevel(logging.INFO)
+    writer.addHandler(fh)
     
-    fig, ax = plt.subplots(1,1,figsize=(48,36))
+    logger.info('prepping DFs')
+    df_community_nodes = df_community_nodes[~df_community_nodes['NODETYPE'].isin(['RAILWAY','PIPELINE','SHIPPINGROUTE'])]
+    df_flow_bl = df_flow_bl.rename(columns={'SOURCE':'source','TARGET':'target'})
+    df_flow_bl = df_flow_bl.set_index(['source','target'])
+    df_flow_cf = df_flow_cf.rename(columns={'SOURCE':'source','TARGET':'target'})
+    df_flow_cf = df_flow_cf.set_index(['source','target'])
+    df_community_edges['source_type'] = df_community_edges['source'].str.split('_').str[0]
+    df_community_edges['target_type'] = df_community_edges['target'].str.split('_').str[0]
+    df_community_edges = df_community_edges.set_index(['source','target'])
+    print ('edges')
+    print (df_community_edges)
+    print ('flow_bl')
+    print(df_flow_bl)
+    print ('flow_cf')
+    print(df_flow_cf)
+    df_community_edges = pd.merge(df_community_edges, df_flow_bl[['flow']], how='left', left_index=True, right_index=True).rename(columns={'flow':'bl_flow'})
+    df_community_edges = pd.merge(df_community_edges, df_flow_cf[['flow']], how='left', left_index=True, right_index=True).rename(columns={'flow':'cf_flow'})
+    
+    logger.info('mapping geometries')
+    df_community_edges['geometry'] = df_community_edges['geometry'].apply(wkt.loads)
+    df_community_nodes['geometry'] = df_community_nodes['geometry'].apply(wkt.loads)
+    
+    logger.info('doing colors and weights')
+    #df_colors = pd.DataFrame.from_dict({kk:"#{:02x}{:02x}{:02x}".format(*vv) for kk,vv in params['vis_colors'].items()}, orient='index').rename(columns={0:'hex'})
+    colormap = {kk:"#{:02x}{:02x}{:02x}".format(*vv) for kk,vv in params['vis_colors'].items()}
+    
+    #df_community_edges['color_key'] = 'FINALMILE'
+    #for kk in ['RAILWAY','PIPELINE','SHIPPINGROUTE']:
+    #    df_community_edges.loc[((df_community_edges['source_type']==kk) | (df_community_edges['target_type']==kk)),'color_key'] = kk
+        
+        
+    #df_community_edges['color_hex'] = df_community_edges['color_key'].map(colormap)
+    df_community_nodes['color_hex'] = df_community_nodes['NODETYPE'].map(colormap)
+    
+    MIN_EDGE = 1
+    MAX_EDGE = 10
+    MIN_NODE = 1
+    MAX_NODE = 25
+    
+    df_community_nodes = pd.merge(df_community_nodes, df_flow_bl.reset_index()[['target','flow']], how='left',left_on='NODE',right_on='target')
+    # do demand and supply separately
+    df_community_nodes['s'] = (np.log10(df_community_nodes['D']+1) - np.log10(df_community_nodes['D']+1).min())/(np.log10(df_community_nodes['D']+1).max() - np.log10(df_community_nodes['D']+1).min())*(MAX_NODE-MIN_NODE)+MIN_NODE
+    df_community_nodes['s_flow'] = (np.log10(df_community_nodes['flow']+1) - np.log10(df_community_nodes['D']+1).min())/(np.log10(df_community_nodes['flow']+1).max() - np.log10(df_community_nodes['flow']+1).min())*(MAX_NODE-MIN_NODE)+MIN_NODE
+    df_community_nodes.loc[df_community_nodes['NODETYPE'].isin(carrier_supplytypes),'s'] = df_community_nodes.loc[df_community_nodes['NODETYPE'].isin(carrier_supplytypes),'s_flow']
+    
+    #df_community_edges['s'] = (np.log(df_community_edges['flow']+1) - np.log(df_community_edges['flow']+1).min())/(np.log(df_community_edges['flow']+1).max() - np.log(df_community_edges['flow']+1).min())*(MAX_EDGE-MIN_EDGE)+MIN_EDGE
+    df_community_edges['s'] = (df_community_edges['bl_flow'] - df_community_edges['bl_flow'].min())/(df_community_edges['bl_flow'].max() - df_community_edges['bl_flow'].min())*(MAX_EDGE-MIN_EDGE)+MIN_EDGE
+    
+    print('new edges')
+    print (df_community_edges.loc[(df_community_edges['cf_flow']>0) & (df_community_edges['bl_flow']==0)])
+    df_community_edges['difference'] = df_community_edges['bl_flow'] - df_community_edges['cf_flow']
+    
+    df_community_edges['reduction'] = df_community_edges['difference']/df_community_edges['bl_flow']
+    
+    cm = LinearSegmentedColormap.from_list('GrayRd', [(0,1,0),(.63,.63,.63),(1, 0, 0)], N=255)
+    
+    df_community_edges = df_community_edges[(df_community_edges['bl_flow']>0) | (df_community_edges['cf_flow'])>0]
+    
+    def apply_colmap(row):
+        if row['bl_flow']>0:
+            cm_val = (row['reduction']+1.)*128 # between 0 and 255 with 128 as neutral
+            return '#{:02x}{:02x}{:02x}'.format(*[int(il*255) for il in cm(int(cm_val))[0:3]])
+        else:
+            return '#{:02x}{:02x}{:02x}'.format(0,0,255)
+    
+    df_community_edges['color_hex'] = df_community_edges.apply(lambda row: apply_colmap(row), axis=1) 
+    
+    
+    # filter IDL -> just use euclidean length
+    logger.info('remove idl edges')
+    df_community_edges['len'] = df_community_edges['geometry'].apply(lambda el: el.length)
+    df_community_edges = df_community_edges[df_community_edges['len']<=350]
+    
+    df_community_edges = df_community_edges.reset_index()
+    
+    # get top changes and add write them to file
+    # want: top/bottom 10 reduced sources
+    logger.info('writing differences to file')
+    for idx, val in df_community_edges.loc[df_community_edges['source_type'].isin(carrier_supplytypes),['source','difference','bl_flow']].groupby('source').sum().sort_values('difference').iloc[:10].iterrows():
+        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t bl_flow:{val["bl_flow"]}')
+    for idx, val in df_community_edges.loc[df_community_edges['source_type'].isin(carrier_supplytypes),['source','difference','bl_flow']].groupby('source').sum().sort_values('difference').iloc[-10:].iterrows():
+        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t bl_flow:{val["bl_flow"]}')
+        
+    # want: top/bottom 10 reduced transmission
+    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['difference', 'reduction']].sort_values('difference').iloc[:10].iterrows():
+        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
+    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['difference','reduction']].sort_values('difference').iloc[-10:].iterrows():
+        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
+    
+    
+    
+    #cast to gdf
+    df_community_nodes = gpd.GeoDataFrame(df_community_nodes, geometry='geometry')
+    df_community_edges = gpd.GeoDataFrame(df_community_edges, geometry='geometry')
+    
+    fig, ax = plt.subplots(1,1,figsize=(72,48))
     ne.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['ne']), **params['type_style']['ne'])
-    gdf[(gdf['supply']==False) & (gdf['demand']==False)].boundary.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['SHIPPINGROUTE'])) # transmission
-    gdf[(gdf['supply']==True) & (gdf['demand']==False)].boundary.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['COALMINE'])) # transmission
-    gdf[(gdf['supply']==False) & (gdf['demand']==True)].boundary.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['OILFIELD'])) # transmission
-    gdf[(gdf['supply']==True) & (gdf['demand']==True)].boundary.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['REFINERY'])) # transmission
-        
-    plt.savefig(os.path.join(os.getcwd(),'results','figures',f'community_blobs_{carrier}.png'))   
-    return []
-    
-def visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne):
-    gdfs = visualise_communities_do_slice(
-        community_ids=community_ids, 
-        node_slice = df_nodes[df_nodes[params["comm_col"]].isin(community_ids)], 
-        edge_slice = df_edges[df_edges['source_comm'].isin(community_ids) | df_edges['target_comm'].isin(community_ids)], 
-        params=params
-    )
-    visualise_community_gdfs(params, community_ids, gdfs, ne)
 
-def visualise_communities_detail(params, df_nodes, df_edges, df_flow, df_communities, ne):
-    print (df_nodes)
     
-    if 'COALMINE' in df_nodes['NODETYPE'].unique():
-        carrier='coal'
-    elif 'LNGTERMINAL' in df_nodes['NODETYPE'].unique():
-        carrier='gas'
-    else:
-        carrier='oil'
-        
-    logger=logging.getLogger('Visualise communities '+carrier)
-    comm_col = f'comm_{params["community_levels"][carrier]}'
-    params['comm_col']=comm_col
+    _plot_point_collection(
+        ax=ax,
+        geoms=df_community_nodes['geometry'],
+        color=df_community_nodes['color_hex'].values.tolist(),
+        markersize=df_community_nodes['s'].values.tolist()
+    )
+    _plot_linestring_collection(
+        ax=ax,
+        geoms=df_community_edges['geometry'],
+        color=df_community_edges['color_hex'].values.tolist(),
+        linewidth=df_community_edges['s'].values.tolist()
+    )
     
-    logger.info('Loading geometries')
-    df_nodes['geometry'] = df_nodes['geometry'].progress_apply(wkt.loads)
-    df_edges['geometry'] = df_edges['geometry'].progress_apply(wkt.loads)
-    #df_communities['geometry'] = df_communities['geometry'].apply(wkt.loads)
-    
-    
-    df_edges['source_type'] = df_edges['source'].str.split('_').str[0]
-    df_edges['target_type'] = df_edges['target'].str.split('_').str[0]
-    
-    df_edges['color_key'] = 'FINALMILE'
-    for kk in ['RAILWAY','PIPELINE','SHIPPINGROUTE']:
-        df_edges.loc[((df_edges['source_type']==kk) | (df_edges['target_type']==kk)),'color_key'] = kk
-        
-    #print ('df_Edges')
-    #print(df_edges)
-        
-    df_nodes = df_nodes[~df_nodes['NODETYPE'].isin(['RAILWAY','PIPELINE','SHIPPINGROUTE'])]
-    df_nodes['color_key'] = df_nodes['NODETYPE']
-    
-    ### merge flow to communi
-    df_flow = df_flow.rename(columns={'SOURCE':'source','TARGET':'target'})
-    df_flow = pd.merge(df_flow, df_nodes[['NODE',comm_col]], how='left',left_on='target',right_on='NODE').rename(columns={comm_col:'target_comm'})
-    
-    df_edges = pd.merge(df_edges.set_index(['source','target']), df_flow.set_index(['source','target'])[['flow']], how='left',left_index=True,right_index=True).reset_index()
-    
-    df_communities = pd.merge(df_communities, 
-         df_edges.loc[df_edges['source_comm']==df_edges['target_comm'],['target_comm','flow']].groupby('target_comm').sum(), 
-         how='left',left_index=True, right_index=True)
-    
-    df_communities = df_communities.sort_values('flow')
-    
-    ### what to vis
-    # top largest N
-    logger.info(f'Doing {params["vis_N_communities"]} largest')
-    community_ids = df_communities.sort_values('N_NODES').iloc[-1*params['vis_N_communities']:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # smallest N
-    logger.info(f'Doing {params["vis_N_communities"]} smallest')
-    community_ids = df_communities.iloc[:params['vis_N_communities']].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # top supply
-    logger.info(f'Doing {params["vis_N_communities"]} largest - supply')
-    #community_ids = df_communities.sort_values('N_NODES').loc[(df_communities['supply']==True)&(df_communities['demand']==False),:].iloc[-1*params['vis_N_communities']:].index.values
-    community_ids = df_flow \
-                        .loc[df_flow['source']=='supersource',['target_comm','flow']] \
-                        .groupby('target_comm') \
-                        .sum() \
-                        .sort_values('flow') \
-                        .iloc[-1*params["vis_N_communities"]:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_supply.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # smallest supply
-    logger.info(f'Doing {params["vis_N_communities"]} smallest - supply')
-    community_ids = df_flow \
-                        .loc[df_flow['source']=='supersource',['target_comm','flow']] \
-                        .groupby('target_comm') \
-                        .sum() \
-                        .sort_values('flow') \
-                        .iloc[:params["vis_N_communities"]].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_supply.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # top demand
-    logger.info(f'Doing {params["vis_N_communities"]} largest - demand')
-    community_ids = df_nodes[[comm_col,'D']].groupby(comm_col).sum().sort_values('D').iloc[-1*params['vis_N_communities']:].index.values
-    #community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==True),:].iloc[-1*params['vis_N_communities']:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_demand.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # smallest_ demand
-    logger.info(f'Doing {params["vis_N_communities"]} smallest - demand')
-    community_ids = df_nodes[[comm_col,'D']].groupby(comm_col).sum().sort_values('D').iloc[:params['vis_N_communities']].index.values 
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_demand.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # top transmission flow
-    logger.info(f'Doing {params["vis_N_communities"]} largest - transmission')
-    community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==False),:].iloc[-1*params['vis_N_communities']:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_transmission.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # smallest transmission flow
-    logger.info(f'Doing {params["vis_N_communities"]} smallest - transmission')
-    community_ids = df_communities.loc[(df_communities['supply']==False)&(df_communities['demand']==False),:].iloc[:params['vis_N_communities']].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_transmission.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # top supple+demand flow
-    logger.info(f'Doing {params["vis_N_communities"]} largest - supply+demand')
-    community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==True),:].iloc[-1*params['vis_N_communities']:].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_largest_sup+dem.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
-    
-    # smallest supply+demand
-    logger.info(f'Doing {params["vis_N_communities"]} smallest - supply+demand')
-    community_ids = df_communities.loc[(df_communities['supply']==True)&(df_communities['demand']==True),:].iloc[:params['vis_N_communities']].index.values
-    params['path'] = os.path.join(os.getcwd(),'results','figures',f'communities_{carrier}_{params["vis_N_communities"]}_smallest_sup+dem.png')
-    visualise_communities_wrapper(community_ids, df_nodes, df_edges, params, ne)
+    plt.savefig(os.path.join(os.getcwd(),'results','figures',f'flow_sds_{carrier}.png'))
     
     return []
 
@@ -651,7 +570,6 @@ def mp_dijkstra(G, sources, w_id):
     return recs
 
 
-
 def flow2iso2adj(iso2, df_flow, df_community_iso2):
     
     
@@ -673,23 +591,25 @@ def flow2iso2adj(iso2, df_flow, df_community_iso2):
     df_flow.loc[df_flow['inv_flow']==np.inf,'inv_flow'] = 2*df_flow['flow'].max()
     df_flow['inv_flow'] = df_flow['inv_flow']/df_flow['inv_flow'].min()
     
+    print('df flow')
+    print (df_flow)
     
     G = nx.DiGraph()
-    G.add_edges_from([(r[0],r[1],{'flow':r[2], 'flow_inv':r[3]}) for r in df_flow[['SOURCE','TARGET','flow','inv_flow']].values.tolist()])
+    G.add_edges_from([(r[0],r[1],{'flow':r[2], 'flow_inv':r[3]}) for r in df_flow[['source','target','flow','inv_flow']].values.tolist()])
     
     MI = pd.MultiIndex.from_product([iso2['iso2'].unique().tolist(),iso2['iso2'].unique().tolist()], names=('source', 'target'))
     all_flows = pd.DataFrame(index=MI)
     
     all_flows['flow'] = 0
     
-    sources = df_flow.loc[df_flow['TARGET'].str.split('_').str[0].isin(['COALMINE']) & (df_flow['flow']>0),'TARGET'].values.tolist()
+    sources = df_flow.loc[df_flow['target'].str.split('_').str[0].isin(['COALMINE']) & (df_flow['flow']>0),'target'].values.tolist()
     #sources = df_community_iso2.loc[df_community_iso2['NODE'].str.split('_').str[0].isin(carrier_sources),'NODE'].values.tolist()
     #print (sources)
     logger.info(f'Number of sources {len(sources)}')
     
     
     df_community_iso2 = df_community_iso2.set_index('NODE')
-    df_flow = df_flow.set_index(['SOURCE','TARGET'])
+    df_flow = df_flow.set_index(['source','target'])
     
     logger.info('calling mp dijkstra')
     
@@ -749,93 +669,211 @@ def flow2iso2adj(iso2, df_flow, df_community_iso2):
     return all_flows
     
 
-def visualise_trade(iso2, ne, df_energy, df_trade, df_flow_adj):
+
+def visualise_trade_arrows(iso2, ne, params, df_energy, df_trade):
     
     if df_trade.iloc[0,df_trade.columns.get_loc('Commodity Code')]==2701:
         carrier='coal'
         carrier_sources=['COALMINE']
+        energy_col = 'Coal*'
     elif df_trade.iloc[0,df_trade.columns.get_loc('Commodity Code')] in [271121, 271111]:
         carrier = 'gas'
         carrier_sources =['OILFIELD']
+        energy_col='Natural gas'
     else:
         carrier = 'oil'
         carrier_sources = ['OILWELL']
+        energy_col = 'Crude oil'
         
     logger = logging.getLogger(f'vis trade {carrier}')
     
-    fig, axs = plt.subplots(2,1,figsize=(48,48))
+    # drop weird double-france
+    ne = ne[~ne.index.isin([249])]
     
-    ne.plot(ax=axs[0], color='#c7c7c7',edgecolor='white')
-    ne.plot(ax=axs[1], color='#c7c7c7',edgecolor='white')
+    logger.info('Reading opt pickel')
+    df_flow_adj = pickle.load(open(params['flowfill_run'][carrier],'rb'))['SIM_ADJ']
     
-    logger.info('Prepping trade data')
-    # filter and join trade data
+    fig = plt.figure(figsize=(18,18))
+    #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+    gs = gridspec.GridSpec(ncols=4, nrows=14, figure=fig)
+    axs = {}
+    axs['act'] = fig.add_subplot(gs[0:7,:])
+    axs['sim'] = fig.add_subplot(gs[8:,:])
+    axs['cax_act_chloro'] = fig.add_axes([0.6,0.5,0.3,0.015])
+    axs['cax_sim_chloro'] = fig.add_axes([0.6,0.07,0.3,0.015])
+    axs['cax_sim_arrows'] = fig.add_axes([0.125,0.07,0.3,0.015])
+        
+    ####### do baseline ###
+    # prep trade
+    
+    print (df_trade)
     
     df_trade = df_trade.loc[(~df_trade['Partner ISO'].isna())&(~df_trade['Reporter ISO'].isna())&(df_trade['Year']==2018)&(df_trade['Trade Flow']=='Import')&(df_trade['Reporter ISO']!='WLD')&(df_trade['Partner ISO']!='WLD'),['Reporter ISO','Partner ISO','Qty']]
+    df_trade = df_trade.groupby(['Reporter ISO','Partner ISO']).sum().reset_index()
     
     iso2.loc[iso2['iso2']=="'NA",'iso2']='NA'
     
     df_trade = pd.merge(df_trade,iso2[['iso2','iso3']], how='left',left_on='Reporter ISO', right_on='iso3').drop(columns=['iso3']).rename(columns={'iso2':'reporter_iso2'})
     df_trade = pd.merge(df_trade,iso2[['iso2','iso3']], how='left',left_on='Partner ISO', right_on='iso3').drop(columns=['iso3']).rename(columns={'iso2':'partner_iso2'})
     
-    ne['pt'] = ne['geometry'].representative_point()
-    ne = ne.rename(columns={'ISO_A2':'iso2'})
-    ne['iso2'] = ne['iso2'].astype(str)
+    # trade_qty in kg, convert to TJ
+    df_trade['TJ'] = df_trade['Qty']/1000/params['tperTJ'][carrier]
+    df_energy[f'{carrier}_TJ'] = df_energy[energy_col]*41868/1000 #ktoe-> TJ
+    print ('energy sorted')
+    print (df_energy.sort_values(f'{carrier}_TJ'))
+    df_trade['reporter_iso2'] = df_trade['reporter_iso2'].str.replace("'NA",'NA')
+    df_trade['partner_iso2'] = df_trade['partner_iso2'].str.replace("'NA",'NA')
+    df_trade = df_trade[['reporter_iso2','partner_iso2','TJ']].set_index(['reporter_iso2','partner_iso2']).unstack().rename_axis(['meow','partner_iso2'],axis='columns').droplevel('meow', axis=1)
     
-    df_trade = pd.merge(df_trade, ne[['iso2','pt']], how='left',left_on='reporter_iso2',right_on='iso2').rename(columns={'pt':'pt_reporter'})
-    df_trade = pd.merge(df_trade, ne[['iso2','pt']], how='left',left_on='partner_iso2',right_on='iso2').rename(columns={'pt':'pt_partner'})
+    # clean up energy
+    df_energy = df_energy[~df_energy['ISO_A2'].isin(['lo','WORLD'])]
+    df_energy['ISO_A2'] = df_energy['ISO_A2'].astype(str)
+    df_energy['ISO_A2'] = df_energy['ISO_A2'].str.replace("nan",'NA')
+    df_energy['ISO_A22'] = df_energy['ISO_A2']
+    df_energy = df_energy[['ISO_A2','ISO_A22',f'{carrier}_TJ']].set_index(['ISO_A2','ISO_A22']).unstack().rename_axis('reporter_iso2').rename_axis(['meow','partner_iso2'],axis='columns').droplevel('meow', axis=1) 
+    
+    ann_prod_act = pd.Series(np.diag(df_energy), index=[df_energy.index], name='TJ')
+    ann_prod_act.index = ann_prod_act.index.get_level_values(0)
+    
+    #########
     
     if carrier=='coal':
-        MIN=100e6
-        MAX=100e9
+        MIN=100000
+        MAX=5000000
         MIN_LW = 1
-        MAX_LW = 25
-        df_trade = df_trade[df_trade['Qty']>MIN]
+        MAX_LW = 10
+        #df_trade = df_trade[df_trade['TJ']>MIN]
+    elif carrier=='gas':
+        MIN=1e5
+        MAX=1.5e6
+        MIN_LW = 1
+        MAX_LW = 10
+        #df_trade = df_trade[df_trade['TJ']>MIN]
+    elif carrier=='oil':
+        MIN=1e5
+        MAX=3e7
+        MIN_LW = 1
+        MAX_LW = 10
+        #df_trade = df_trade[df_trade['TJ']>MIN]
     
-    logger.info('Prepped df')
-    print (df_trade)
+    # reporter = importer
+    df_trade = df_trade.stack().reset_index().rename(columns={'partner_iso2':'source','reporter_iso2':'dest',0:'TJ'})
+    logger.info('Prepped act trade')
+    print (df_trade.sort_values('TJ'))    
     
-    # filter trade data
+    df_flow_adj = df_flow_adj.stack()[df_flow_adj.stack()>0].reset_index().rename(columns={'iso2':'source','level_1':'dest',0:'flow'})
     
-    for idx, row in df_trade.iterrows():
-        
-        axs[0].annotate("",
-                xy=(row['pt_reporter'].x, row['pt_reporter'].y), 
-                xycoords='data',
-                xytext=(row['pt_partner'].x, row['pt_partner'].y), 
-                textcoords='data',
-                arrowprops=dict(arrowstyle="->", 
-                                color="0.5",
-                                shrinkA=5, 
-                                shrinkB=5,
-                                patchA=None, 
-                                patchB=None,
-                                linewidth=(row['Qty']-MIN)/(MAX-MIN)*(MAX_LW-MIN_LW)+MIN_LW,
-                                connectionstyle="arc3,rad=-0.3",
-                                ),
-                )
-        
-        
-    logger.info('doing flow solution')
+    df_flow_adj['TJ'] = df_flow_adj['flow']/df_flow_adj['flow'].sum()*ann_prod_act.sum()
+    df_flow_adj = df_flow_adj.drop(columns=['flow'])
     
-    # rescale flow data
-    df_flow_adj['flow'] = df_flow_adj['flow']/df_flow_adj['flow'].sum() * df_trade['Qty'].sum()
-    df_flow_adj = df_flow_adj.reset_index()
-    df_flow_adj = df_flow_adj[df_flow_adj['flow']>MIN]
-    df_flow_adj.loc[df_flow_adj['source']=="'NA",'source']='NA'
-    df_flow_adj.loc[df_flow_adj['target']=="'NA",'target']='NA'
+    ann_prod_sim = df_flow_adj[['source','TJ']].groupby('source').sum()
+    df_flow_adj = df_flow_adj.loc[df_flow_adj['source']!=df_flow_adj['dest'],:]
     
-    df_flow_adj = pd.merge(df_flow_adj, ne[['iso2','pt']], how='left',left_on='source',right_on='iso2').rename(columns={'pt':'pt_source'})
-    df_flow_adj = pd.merge(df_flow_adj, ne[['iso2','pt']], how='left',left_on='target',right_on='iso2').rename(columns={'pt':'pt_target'})
-    
-    print('flow minmax',df_flow_adj['flow'].min(), df_flow_adj['flow'].max())
+    logger.info('prepped sim trade')
     print (df_flow_adj)
     
-    for idx, row in df_flow_adj.iterrows():
-        axs[1].annotate("",
-                xy=(row['pt_source'].x, row['pt_source'].y), 
+    logger.info('prepped prod act')
+    print (ann_prod_act)
+    
+    logger.info('prepped prod sim')
+    print (ann_prod_sim)
+    
+    print ('sums')
+    print (df_trade['TJ'].sum())
+    #print (df_energy.sum().sum())
+    print (df_flow_adj['TJ'].sum())
+    print (ann_prod_sim['TJ'].sum())
+    print (ann_prod_act.sum())
+    
+        
+    logger.info('Prepping layout data')
+    # filter and join trade data
+    
+    #ne = ne.drop(index=249)
+    ne = pd.merge(ne,ann_prod_act, how='left', left_on='ISO_A2',right_index=True).rename(columns={'TJ':'act_TJ'})
+    ne = pd.merge(ne,ann_prod_sim, how='left', left_on='ISO_A2',right_index=True).rename(columns={'TJ':'sim_TJ'})
+    
+    ne['log10_act_TJ'] = np.log10(ne['act_TJ'])
+    #ne['sim_TJ'] = np.log10(ne['sim_TJ'])
+    ne.loc[ne['log10_act_TJ']<0,'log10_act_TJ'] = 0
+    #ne.loc[ne['sim_TJ']<0,'sim_TJ'] = 0
+    
+    
+    
+    ne['logerr'] = np.abs((ne['act_TJ']-ne['sim_TJ'].fillna(0))/ne['act_TJ'])
+    print (ne[['log10_act_TJ','act_TJ','sim_TJ','logerr']])
+    
+    print (ne[['log10_act_TJ','act_TJ','sim_TJ','logerr']].min())
+    print (ne[['log10_act_TJ','act_TJ','sim_TJ','logerr']].max())
+    print (ne.sort_values('logerr'))
+    
+    ne.plot(ax=axs['act'], column='log10_act_TJ', missing_kwds={"color": "#c7c7c7"}, edgecolor='white', cmap='viridis', vmin=0, vmax=8)
+    ne.plot(ax=axs['sim'], column='logerr', missing_kwds={"color": "#c7c7c7"}, edgecolor='white',cmap='spring_r', vmin=0, vmax=1) 
+    
+    cmap_v = plt.cm.get_cmap('viridis')
+    norm = mpl.colors.Normalize(vmin=0, vmax=8)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap_v), cax=axs['cax_act_chloro'], orientation='horizontal', label='Actual Production [TJ]')
+    axs['cax_act_chloro'].set_xticklabels([f'10^{el}' for el in range(9)])
+    
+    cmap_spring = plt.cm.get_cmap('spring_r')
+    norm = mpl.colors.Normalize(vmin=0, vmax=1)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap_spring), cax=axs['cax_sim_chloro'], orientation='horizontal', label='Simulated Production Error [%]')
+    axs['cax_sim_chloro'].set_xticklabels(['0%','20%','40%','60%','80%','100%'])
+    
+    def get_reppt(geom):
+        if geom.type=='MultiPolygon':
+            return sorted(list(geom), key=lambda subgeom: subgeom.area)[-1].representative_point()
+        elif geom.type=='Polygon':
+            return geom.representative_point()
+        else:
+            print ('ruh roh geom', geom.type)
+    
+    ne['pt'] = ne['geometry'].apply(lambda geom: get_reppt(geom))
+    
+    df_trade = pd.merge(df_trade,ne[['pt','ISO_A2']], how='left',left_on='source',right_on='ISO_A2').rename(columns={'pt':'source_pt'}).drop(columns=['ISO_A2'])
+    df_trade = pd.merge(df_trade,ne[['pt','ISO_A2']], how='left',left_on='dest',right_on='ISO_A2').rename(columns={'pt':'dest_pt'}).drop(columns=['ISO_A2'])
+    df_flow_adj = pd.merge(df_flow_adj,ne[['pt','ISO_A2']], how='left',left_on='source',right_on='ISO_A2').rename(columns={'pt':'source_pt'}).drop(columns=['ISO_A2'])
+    df_flow_adj = pd.merge(df_flow_adj,ne[['pt','ISO_A2']], how='left',left_on='dest',right_on='ISO_A2').rename(columns={'pt':'dest_pt'}).drop(columns=['ISO_A2'])
+        
+    axs['act'].set_xlim([-180,180])
+    axs['act'].set_ylim([-60,85])
+    axs['sim'].set_xlim([-180,180])
+    axs['sim'].set_ylim([-60,85])
+    axs['act'].set_xticks([])
+    axs['act'].set_yticks([])
+    axs['sim'].set_xticks([])
+    axs['sim'].set_yticks([])
+        
+    # green -> good, red -> missing
+    df_trade = df_trade.set_index(['source','dest'])
+    df_flow_adj = df_flow_adj.set_index(['source','dest'])
+    
+    df_flow_adj = pd.merge(df_flow_adj, df_trade[['TJ']].rename(columns={'TJ':'R_TJ'}), how='left',left_index=True, right_index=True)
+    df_flow_adj['abserr'] = (df_flow_adj['R_TJ'] - df_flow_adj['TJ'])/df_flow_adj['R_TJ']
+    
+    df_trade = df_trade.reset_index()
+    df_flow_adj = df_flow_adj.reset_index()
+    
+    print (df_trade.sort_values('TJ'))
+    print (df_flow_adj.sort_values('TJ'))
+    print (len(df_trade.loc[df_trade['TJ']>MIN,:]))
+    print (df_flow_adj.sort_values('abserr'))
+    
+    cmap = plt.cm.get_cmap('PiYG_r')
+    norm = mpl.colors.Normalize(vmin=0, vmax=1)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=axs['cax_sim_arrows'], orientation='horizontal', label='Simulated Trade Error [%]')
+    axs['cax_sim_arrows'].set_xticklabels(['0%','20%','40%','60%','80%','100%'])
+    
+    
+    
+    for idx, row in df_trade.loc[df_trade['TJ']>MIN,:].sort_values('TJ').iterrows():
+        
+        print (row['source'],row['dest'],row['TJ'])
+        
+        axs['act'].annotate("",
+                xy=(row['dest_pt'].x, row['dest_pt'].y), 
                 xycoords='data',
-                xytext=(row['pt_target'].x, row['pt_target'].y), 
+                xytext=(row['source_pt'].x, row['source_pt'].y), 
                 textcoords='data',
                 arrowprops=dict(arrowstyle="->", 
                                 color="0.5",
@@ -843,10 +881,36 @@ def visualise_trade(iso2, ne, df_energy, df_trade, df_flow_adj):
                                 shrinkB=5,
                                 patchA=None, 
                                 patchB=None,
-                                linewidth=(row['flow']-MIN)/(MAX-MIN)*(MAX_LW-MIN_LW)+MIN_LW,
+                                linewidth=(row['TJ']-MIN)/(MAX-MIN)*(MAX_LW-MIN_LW)+MIN_LW,
                                 connectionstyle="arc3,rad=-0.3",
                                 ),
                 )
+
+    for idx, row in df_flow_adj.loc[df_flow_adj['TJ']>MIN,:].sort_values('TJ').iterrows():
+        
+        if np.isnan(row['abserr']):
+            color="0.5"
+        else:
+            color = "#{:02x}{:02x}{:02x}".format(*[int(el*255) for el in cmap(row['abserr'])[0:3]])
+            
+        print (row['source'],row['dest'],row['TJ'])
+        
+        axs['sim'].annotate("",
+                xy=(row['dest_pt'].x, row['dest_pt'].y), 
+                xycoords='data',
+                xytext=(row['source_pt'].x, row['source_pt'].y), 
+                textcoords='data',
+                arrowprops=dict(arrowstyle="->", 
+                                color=color,
+                                shrinkA=5, 
+                                shrinkB=5,
+                                patchA=None, 
+                                patchB=None,
+                                linewidth=(row['TJ']-MIN)/(MAX-MIN)*(MAX_LW-MIN_LW)+MIN_LW,
+                                connectionstyle="arc3,rad=-0.3",
+                                ),
+                )
+
         
         
     logger.info('Done arrows')
@@ -855,6 +919,6 @@ def visualise_trade(iso2, ne, df_energy, df_trade, df_flow_adj):
     # two subplots
     #plt.show()
     
-    plt.savefig(os.path.join(os.getcwd(),'results','figures',f'trade_{carrier}.png'))
+    plt.savefig(os.path.join(os.getcwd(),'results','figures',f'trade_arrows_{carrier}.png'))
     
     return []
