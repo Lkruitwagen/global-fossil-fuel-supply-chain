@@ -45,7 +45,7 @@ from ffsc.flow.prep_flow import (
     prep_cities
 )
 from ffsc.flow.network_flow import (
-    solve_coal,
+    prep_coal_nx,
 )
 
 def get_pipeline(tag=None):
@@ -179,9 +179,9 @@ def flow_solve_mincost(**kwargs):
     
     nodes = [
         node(
-            solve_coal,
-            ["flow_coal_edges", "flow_cities_data", "simplify_powerstations_data", "flow_coalmines_data", "global_energy_production", "flow_parameters"],
-            "coal_flow_solution",
+            prep_coal_nx,
+            ["flow_coal_edges", "flow_cities_data", "simplify_powerstations_data", "flow_coalmines_data", "global_energy_production", "ne", "flow_parameters"],
+            ["flow_coal_nx_edges","flow_coal_nx_nodes"],
             tags = tags + ["flow-solve_coal"]
         )
     ]

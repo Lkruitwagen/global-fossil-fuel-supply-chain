@@ -59,7 +59,8 @@ from ffsc.pipeline.nodes.spatialjoin import (
 from ffsc.pipeline.nodes.firstlastmile import (
     firstmile_edge,
     powerstations_lastmile,
-    cities_delauney
+    cities_delauney,
+    shippingroutes_lastmile
 )
 from ffsc.pipeline.nodes.explode import (
     explode_edges_railways,
@@ -266,7 +267,19 @@ def firstlastmile_pipeline(**kwargs):
             ['sjoin_cities_data','ne'],
             'flmile_edges_cities',
             tags = tags+['lastmile','lastmile_cities']
-        )
+        ),
+        node(
+            shippingroutes_lastmile,
+            ['sjoin_edges_shippingroutes_ports','sjoin_shippingroutes_data','sjoin_ports_data'],
+            'flmile_edges_shippingroutes_ports',
+            tags= tags+['lastmile','lastmile_shippingroutes','lastmile_shippingroutes_ports']
+        ),
+        node(
+            shippingroutes_lastmile,
+            ['sjoin_edges_shippingroutes_lngterminals','sjoin_shippingroutes_data','sjoin_lngterminals_data'],
+            'flmile_edges_shippingroutes_lngterminals',
+            tags= tags+['lastmile','lastmile_shippingroutes','lastmile_shippingroutes_lng']
+        ),
     ]
     
     IDL_nodes = [
@@ -281,7 +294,7 @@ def firstlastmile_pipeline(**kwargs):
     null_nodes = [node(null_forward, f'sjoin_{sector}_data', f'flmile_{sector}_data',tags = tags+['flm_null',f'flm_null_{sector}'])
                  for sector in ALL_SECTORS]
     null_nodes += [node(null_forward, f'sjoin_edges_{sector1}_{sector2}', f'flmile_edges_{sector1}_{sector2}', tags=tags+['flm_null',f'flm_null_{sector1}_{sector2}'])
-                  for sector1, sector2 in SJOIN_PAIRS]
+                  for sector1, sector2 in SJOIN_PAIRS if sector1!='shippingroutes']
     
     return Pipeline(firstmile_nodes + lastmile_nodes + IDL_nodes + null_nodes)
     

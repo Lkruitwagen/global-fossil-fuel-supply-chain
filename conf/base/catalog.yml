@@ -13,7 +13,11 @@ flow_parameters:
 ne:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/ne/ne_10m_countries.geojson
-
+  
+dummy:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/dummy.pqt
+  
 ##################################################
 ## RAW DATA
 ##################################################
@@ -731,6 +735,14 @@ simplify_edges_other_shippingroutes:
 flow_coal_edges:
   type: kedro.extras.datasets.pandas.ParquetDataSet
   filepath: results/flow/flow_coal_edges.pqt
+  
+flow_coal_nx_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_nx_edges.pqt
+  
+flow_coal_nx_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_nx_nodes.pqt
   
 flow_gas_edges:
   type: kedro.extras.datasets.pandas.ParquetDataSet

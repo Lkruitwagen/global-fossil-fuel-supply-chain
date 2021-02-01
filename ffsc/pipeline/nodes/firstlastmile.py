@@ -9,6 +9,7 @@ from pandas.core.common import SettingWithCopyWarning
 
 from ffsc.pipeline.nodes.mp_sjoin_mindist import *
 from ffsc.pipeline.nodes.mp_utmbuffer import *
+from ffsc.pipeline.nodes.utils import V_inv
 
 N_WORKERS=12
 
@@ -219,3 +220,41 @@ def cities_delauney(df_cities, gdf_ne):
     logger.info(f'Got {len(df_lss)} finalmile city-city connections')
     
     return df_lss[['START','END','DISTANCE']]
+
+
+def shippingroutes_lastmile(df_edges_shippingroutes, df_shippingroutes_data, df_asset_data):
+    asset_name = df_edges_shippingroutes.iloc[0,df_edges_shippingroutes.columns.get_loc('END')].split('_')[0]
+    logger = logging.getLogger('flmile'+'_'+'SHIPPINGROUTES-'+asset_name)
+    logger.info('Mapping geometries')
+    
+    df_asset_data['geometry'] = df_asset_data['geometry'].apply(wkt.loads)
+    df_shippingroutes_data['geometry'] = df_shippingroutes_data['geometry'].apply(wkt.loads)
+    
+    #print (df_edges_shippingroutes)
+    
+    matches = []
+
+    def mindist(pt1,pt2):
+
+        try:
+            return V_inv((pt1.y,pt1.x),(pt2.y, pt2.x))[0]*1000
+        except:
+            return np.inf
+
+    for idx, row in tqdm(df_asset_data.iterrows()):
+        df_shippingroutes_data['NEAREST_PT'] = df_shippingroutes_data['geometry'].apply(lambda geom: ops.nearest_points(geom,row['geometry'])[0])
+        df_shippingroutes_data['DIST'] = df_shippingroutes_data['NEAREST_PT'].apply(lambda pt: mindist(pt,row['geometry'])) #V_inv((50,179),(50,-175))
+        min_idx = df_shippingroutes_data['DIST'].idxmin()
+
+        matches.append({
+            'START':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('unique_id')],
+            'END':row['unique_id'],
+            'NEAREST_PT':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('NEAREST_PT')].wkt,
+            'DISTANCE':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('DIST')]
+        })
+        
+    df_matches = pd.DataFrame(matches)
+    
+    df_matches = df_matches[~df_matches['END'].isin(df_edges_shippingroutes['END'])]
+    
+    return df_edges_shippingroutes.append(df_matches,ignore_index=True)
