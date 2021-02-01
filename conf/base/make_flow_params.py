@@ -27,6 +27,7 @@ params = dict(
             # LNG: $1000/t/yr cap cost + $0.6/mmbtu opex + 15% parasitic losses
             LNG_TRANSFER =  1000*_cap_factor(25) + 0.6 / 1.055 * 52 + 4/1.055*52 *0.15,  # $/t + 4$/mmbtu / 1.055 -> x$/GJ * 52GJ/t
             check_paths = True,
+            COMMUNITY_LEVEL={'coal':7,'oil':9,'gas':9},
             constrain_production = False,
 )
 

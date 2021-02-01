@@ -189,19 +189,19 @@ def vis_individual_communities(**kwargs):
     nodes = [
         node(
             visualise_communities_detail,
-            ["vis_parameters"]+[el.replace('XXX','coal') for el in ["community_XXX_nodes", "community_XXX_edges", "communities_XXX"]]+["ne"],
+            ["vis_parameters"]+[el.replace('XXX','coal') for el in ["community_XXX_nodes", "community_XXX_edges", "flow_baseline_XXX", "communities_XXX"]]+["ne"],
             [],
             tags = tags + ["visualise-community-details_coal"]
         ),
         node(
             visualise_communities_detail,
-            ["vis_parameters"]+[el.replace('XXX','oil') for el in ["community_XXX_nodes", "community_XXX_edges", "communities_XXX"]]+["ne"],
+            ["vis_parameters"]+[el.replace('XXX','oil') for el in ["community_XXX_nodes", "community_XXX_edges", "flow_baseline_XXX", "communities_XXX"]]+["ne"],
             [],
             tags = tags + ["visualise-community-details_oil"]
         ),
         node(
             visualise_communities_detail,
-            ["vis_parameters"]+[el.replace('XXX','gas') for el in ["community_XXX_nodes", "community_XXX_edges", "communities_XXX"]]+["ne"],
+            ["vis_parameters"]+[el.replace('XXX','gas') for el in ["community_XXX_nodes", "community_XXX_edges","flow_baseline_XXX", "communities_XXX"]]+["ne"],
             [],
             tags = tags + ["visualise-community-details_gas"]
         ),
@@ -220,6 +220,18 @@ def vis_trade_prep_pl(**kwargs):
             "flow_coal_iso2",
             tags=tags + ["visualise-trade-prep_coal"]
         ),
+        node(
+            flow2iso2adj,
+            ["iso2", "flow_baseline_oil", "community_oil_iso2"],
+            "flow_oil_iso2",
+            tags=tags + ["visualise-trade-prep_oil"]
+        ),
+        node(
+            flow2iso2adj,
+            ["iso2", "flow_baseline_gas", "community_gas_iso2"],
+            "flow_gas_iso2",
+            tags=tags + ["visualise-trade-prep_gas"]
+        ),
         
     ]
     
@@ -234,6 +246,18 @@ def vis_trade_pl(**kwargs):
             ["iso2", "ne", "global_energy_production", "coal_trade", "flow_coal_iso2"],
             [],
             tags=tags + ["visualise-trade_coal"]
+        ),
+        node(
+            visualise_trade,
+            ["iso2", "ne", "global_energy_production", "oil_trade", "flow_oil_iso2"],
+            [],
+            tags=tags + ["visualise-trade_oil"]
+        ),
+        node(
+            visualise_trade,
+            ["iso2", "ne", "global_energy_production", "gas_trade", "flow_gas_iso2"],
+            [],
+            tags=tags + ["visualise-trade_gas"]
         ),
     ]
     
@@ -262,6 +286,18 @@ def vis_flow_pl(**kwargs):
             ["vis_parameters", "ne", "flow_baseline_coal", "community_coal_edges", "community_coal_nodes"],
             [],
             tags = tags+['visualise-flow_coal']
+        ),
+        node(
+            visualise_flow,
+            ["vis_parameters", "ne", "flow_baseline_oil", "community_oil_edges", "community_oil_nodes"],
+            [],
+            tags = tags+['visualise-flow_oil']
+        ),
+        node(
+            visualise_flow,
+            ["vis_parameters", "ne", "flow_baseline_gas", "community_gas_edges", "community_gas_nodes"],
+            [],
+            tags = tags+['visualise-flow_gas']
         )
     ]
     
