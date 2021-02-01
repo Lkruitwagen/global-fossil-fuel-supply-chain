@@ -2,7 +2,16 @@
 joblib_n_jobs: 30
 
 max_geo_matching_distance: 10
-BUFFER: 10000
+BUFFER:
+  COALMINE: 10000
+  OILFIELD: 10000
+  OILWELL: 10000
+  CITY: 10000
+  POWERSTATION: 10000
+  REFINERY: 10000
+  PORT: 10000
+  LNGTERMINAL: 10000
+
 
 snapping_threshold: 0.0000000001
 
