@@ -74,6 +74,10 @@ from ffsc.pipeline.nodes.simplify import (
 from ffsc.pipeline.nodes.internationaldateline import (
     connect_IDL    
 )
+from ffsc.pipeline.nodes.missinglink import (
+    missinglink_cities,
+    missinglink_powerstations
+)
 
 ALL_SECTORS = ['shippingroutes','pipelines','railways','refineries','oilfields','oilwells','coalmines','lngterminals','ports','cities','powerstations']
 
@@ -118,7 +122,7 @@ def get_pipeline(tag=None):
         if type(tag)==str:
             return Pipeline([n for n in data_science_pipeline.nodes if tag in n.tags])
         elif type(tag)==list:
-            return Pipeline([n for n in data_science_pipeline.nodes if np.isin(n.tags,tag).any()])
+            return Pipeline([n for n in data_science_pipeline.nodes if len(n.tags - set(tag)) < len(n.tags)])
         
     else:
         return data_science_pipeline
@@ -401,6 +405,21 @@ def simplify_pipeline(**kwargs):
         ),
     ]
     
+    missinglink_nodes = [
+        node(
+            missinglink_cities,
+            ['explode_edges_cities','explode_cities_data','explode_ports_data'],
+            'simplify_edges_cities',
+            tags = tags+['simplify_missinglinks','simplify_missinglinks_cities']
+        ),
+        node(
+            missinglink_powerstations,
+            ['flow_coal_missing_powerstations','flow_oil_missing_powerstations','flow_gas_missing_powerstations','explode_edges_powerstations', 'explode_cities_data'],
+            'simplify_edges_powerstations',
+            tags = tags+['simplify_missinglinks','simplify_missinglinks_powerstations']
+        ),
+    ]
+    
     null_nodes = [
         node(null_forward,
              f'explode_{sector}_data',
@@ -416,7 +435,7 @@ def simplify_pipeline(**kwargs):
              f'simplify_edges_{sector}',
              tags=tags+['simplify_null',f'null_edges_{sector}']
             )
-        for sector in ['oilfields','oilwells','coalmines','cities','powerstations']
+        for sector in ['oilfields','oilwells','coalmines']
     ]
     
     null_nodes += [
@@ -437,5 +456,5 @@ def simplify_pipeline(**kwargs):
         for sector in ['pipelines','railways','shippingroutes']
     ]
     
-    return Pipeline(simplify_nodes+null_nodes)
+    return Pipeline(simplify_nodes+missinglink_nodes+null_nodes)
 

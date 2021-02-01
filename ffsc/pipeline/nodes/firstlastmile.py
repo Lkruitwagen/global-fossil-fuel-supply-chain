@@ -189,8 +189,8 @@ def cities_delauney(df_cities, gdf_ne):
     df_lss['geometry'] = df_lss['points'].progress_apply(lambda el: geometry.LineString([(pt.x, pt.y) for pt in el]))
     
     logger.info(f'Getting coastline and intersection')
-    coastline_mp = gdf_ne.geometry.boundary.unary_union # paralellise this
-    coastline_df = pd.DataFrame(gpd.GeoDataFrame(list(coastline_mp)).rename(columns={0:'geometry'}).set_geometry('geometry'))
+    coastline_mp = gdf_ne.geometry.unary_union # paralellise this THIS RIGHT HERE BACKWARDDSS
+    coastline_df = pd.DataFrame(gpd.GeoDataFrame([pp.exterior for pp in list(coastline_mp)]).rename(columns={0:'geometry'}).set_geometry('geometry'))
     logger.info(f'casting to str')
     coastline_df['geometry'] = coastline_df['geometry'].progress_apply(lambda el: el.wkt)
     df_lss['geom_str']=df_lss['geometry'].progress_apply(lambda el: el.wkt) # L_idx
