@@ -16,17 +16,8 @@ class make_nx:
     def __init__(self, carrier, recipes_used = None):
         
         
-        ############################################
-        ########## Changes made by Aaron ###########
-        ############################################
-        
-        ### optional third argument of recipes used is added 
-        
-        # by default, set to the name of the carrier
-        
         if recipes_used == None:
             recipes_used = carrier
-        ############################################
         
         
         self.all_data_dirs = {
@@ -68,7 +59,7 @@ class make_nx:
 
         self.recipes = recipes
         
-        self.recipes_used = recipes_used ##
+        self.recipes_used = recipes_used
 
 
         tperTJ = {
@@ -116,15 +107,6 @@ class make_nx:
                             }
 
         
-        ############################################
-        ########## Changes made by Aaron ###########
-        ############################################
-        
-        ### print (self.impedance_factors) ### Aaron has commented this out
-        
-        # raise value error unless both valid carrier and valid recipes are used
-        # this ensures that the _load_dfs() will operate correctly
-        
         valid_carrier = ['oil', 'gas', 'coal']
         
         valid_recipes = []
@@ -140,7 +122,6 @@ class make_nx:
             print('recipes used: ' + self.recipes_used)
         else:
             raise ValueError("make_nx: recipes must be one of %r." % valid_recipes)
-        ############################################
         
 
 
@@ -154,7 +135,7 @@ class make_nx:
         self.dfs['cities'] = pd.read_csv(self.all_data_dirs['cities-N'])
         self.dfs['powerstns'] = pd.read_csv(self.all_data_dirs['powerstn-N'])
 
-        keys = [kk['name'] for kk in self.recipes[self.recipes_used]] ##
+        keys = [kk['name'] for kk in self.recipes[self.recipes_used]]
 
         for kk in keys:
             self.dfs[kk] = pd.read_csv(self.all_data_dirs[kk])
@@ -162,7 +143,7 @@ class make_nx:
 
     def _fill_graph(self):
 
-        for step in self.recipes[self.recipes_used]: ##
+        for step in self.recipes[self.recipes_used]:
             logger.info(f'doing step {step["desc"]}...')
             dup_strs = ['','']
             start_col = [cc for cc in self.dfs[step['name']].columns if 'START_ID' in cc][0]
@@ -193,7 +174,7 @@ class make_nx:
 
             self.G.add_edges_from(
                 [
-                    ((r[0]+dup_strs[0]).strip(),(r[1]+dup_strs[1]).strip(),{'z':int(round(r[2]*self.impedance_factors[step['name']][self.carrier]))})  ##
+                    ((r[0]+dup_strs[0]).strip(),(r[1]+dup_strs[1]).strip(),{'z':int(round(r[2]*self.impedance_factors[step['name']][self.carrier]))})
                 for r in self.dfs[step['name']].loc[:,order+['distance']].values.tolist()]
                 )
 
