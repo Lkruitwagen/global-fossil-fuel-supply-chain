@@ -57,6 +57,7 @@ from ffsc.interdiction.dijkstra_methods import (
 from ffsc.interdiction.interdiction_methods import (
     sds_demand_counterfactual,
     interdict_supply,
+    post_interdict_supply,
 )
 
 def get_pipeline(tag=None):
@@ -72,10 +73,10 @@ def get_pipeline(tag=None):
 
 
     data_science_pipeline = (
-        interdiction_baseline_call_pl()
-        + interdiction_baseline_parse_pl()
-        + interdiction_community_pl()
-        + interdiction_community_parse_pl()
+        # interdiction_baseline_call_pl()
+        # + interdiction_baseline_parse_pl()
+        #+ interdiction_community_pl()
+        #+ interdiction_community_parse_pl()
         #+ dijkstra_prep_paths_pl()
         #+ dijkstra_parse_paths_pl()
         #+ dijkstra_reachable_pl()
@@ -83,10 +84,11 @@ def get_pipeline(tag=None):
         + dijkstra_pypy_pickle_pl()
         + dijkstra_pypy_paths_pl()
         + dijkstra_make_adj_pl()
-        + dijkstra_opt()
+        #+ dijkstra_opt()
         + dijkstra_flow()
         + sds_counterfactual_pl()
         + supply_interdiction_pl()
+        + post_supply_interdiction_pl()
     )
     
     if tag:
@@ -105,26 +107,26 @@ def get_pipeline(tag=None):
 
 
 def sds_counterfactual_pl(**kwargs):
-    tags = ['counterfactual']
+    tags = ['sds-counterfactual']
     
     nodes = [
         node(
             sds_demand_counterfactual,
             ['iso2', 'sds2040', 'community_coal_nodes', 'community_coal_iso2', "community_coal_edges", "flow_parameters", "coal_dijkstra_mincost_adj"],  
             'flow_sds_coal',
-            tags = tags + ['counterfactual_coal']
+            tags = tags + ['sds-counterfactual_coal']
         ),
         node(
             sds_demand_counterfactual,
             ['iso2', 'sds2040', 'community_gas_nodes', 'community_gas_iso2', "community_gas_edges", "flow_parameters", "gas_dijkstra_mincost_adj"],  
             'flow_sds_gas',
-            tags = tags + ['counterfactual_gas']
+            tags = tags + ['sds-counterfactual_gas']
         ),
         node(
             sds_demand_counterfactual,
             ['iso2', 'sds2040', 'community_oil_nodes', 'community_oil_iso2', "community_oil_edges", "flow_parameters", "oil_dijkstra_mincost_adj"],  
             'flow_sds_oil',
-            tags = tags + ['counterfactual_oil']
+            tags = tags + ['sds-counterfactual_oil']
         ),
     ]
     
@@ -136,9 +138,47 @@ def supply_interdiction_pl(**kwargs):
     nodes = [
         node(
             interdict_supply,
-            [ 'community_coal_nodes', "community_coal_edges", "flow_parameters", "coal_dijkstra_mincost_adj"],
+            [ 'community_coal_nodes', "flow_parameters", "coal_dijkstra_mincost_adj"],
             [],
             tags = tags + ['supply-interdiction_coal'],
+        ),
+        node(
+            interdict_supply,
+            [ 'community_oil_nodes', "flow_parameters", "oil_dijkstra_mincost_adj"],
+            [],
+            tags = tags + ['supply-interdiction_oil'],
+        ),
+        node(
+            interdict_supply,
+            [ 'community_gas_nodes', "flow_parameters", "oil_dijkstra_mincost_adj"], #not a typo. Use the oil sources to limit the number that are searched for.
+            [],
+            tags = tags + ['supply-interdiction_gas'],
+        )
+    ]
+    
+    return Pipeline(nodes)
+
+def post_supply_interdiction_pl(**kwargs):
+    tags = ["post-supply-interdiction"]
+    
+    nodes = [
+        node(
+            post_interdict_supply,
+            [ 'community_coal_nodes', "flow_parameters", "coal_dijkstra_mincost_adj"],
+            [],
+            tags = tags + ['post-supply-interdiction_coal'],
+        ),
+        node(
+            post_interdict_supply,
+            [ 'community_oil_nodes', "flow_parameters", "oil_dijkstra_mincost_adj"],
+            [],
+            tags = tags + ['post-supply-interdiction_oil'],
+        ),
+        node(
+            post_interdict_supply,
+            [ 'community_gas_nodes', "flow_parameters", "gas_dijkstra_mincost_adj"],
+            [],
+            tags = tags + ['post-supply-interdiction_gas'],
         )
     ]
     
@@ -225,7 +265,7 @@ def dijkstra_make_adj_pl(**kwargs):
     ]
     
     return Pipeline(nodes)
-    
+"""   
 def dijkstra_opt(**kwargs):
     tags = ["dijkstra-genetic"]
     
@@ -251,6 +291,7 @@ def dijkstra_opt(**kwargs):
     ]
     
     return Pipeline(nodes)
+"""
 
 def dijkstra_flow(**kwargs):
     tags = ["dijkstra-flow"]
@@ -350,7 +391,7 @@ def dijkstra_shortest_paths_pl(**kwargs):
     ]
     
     return Pipeline(nodes)
-"""
+
 
 
 def interdiction_baseline_call_pl(**kwargs):
@@ -436,3 +477,4 @@ def interdiction_community_parse_pl(**kwargs):
     ]
     
     return Pipeline(nodes)
+"""

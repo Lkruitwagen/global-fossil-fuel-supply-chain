@@ -18,7 +18,7 @@ from ffsc.interdiction.dijkstra_methods import differential_fill
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-N_WORKERS=8
+N_WORKERS=14
 
 # total cost overflowing max int: 2147483647
 
@@ -125,9 +125,120 @@ def sds_demand_counterfactual(iso2, df_sds, df_nodes, node_iso2, edge_df, params
     return edge_df.reset_index().drop(columns=['source_idx','target_idx'])
     
     
+def interdict_supply_worker(ii_w, carrier, params):
+    
+    if ii_w==None:
+        worker_logger=logging.getLogger(f'baseline_{carrier}')
+    else:
+        worker_logger=logging.getLogger(f'{ii_w}_{carrier}')
+    
+    worker_logger.info('Loading catalog data')
+    catalog = yaml.load(open(os.path.join(os.getcwd(),'conf','base','catalog.yml'),'r'),Loader=yaml.SafeLoader)
+    kedro_catalog = DataCatalog.from_config(catalog)
+    node_df = kedro_catalog.load(f'community_{carrier}_nodes')
+    dijkstra_min_adj = kedro_catalog.load(f'{carrier}_dijkstra_mincost_adj')
+    
+    worker_logger.info('loading run data')
+    run_data = pickle.load(open(params['flowfill_run'][carrier],'rb'))  
+    SCALE_FACTOR = run_data['SCALE_FACTOR']
+    STEP_INI = run_data['STEP_INI']
+    GAMMA = run_data['GAMMA']
+    df_alpha = run_data['ALPHA']
+    
+    if ii_w!=None:
+        worker_logger.info('applying interdiction')
+        df_alpha.iloc[ii_w] = df_alpha.iloc[ii_w]*2
+    
+    worker_logger.info('running fill algo')
+    _, df_flow, df_z = differential_fill(node_df, dijkstra_min_adj, df_alpha, STEP_INI, GAMMA,SCALE_FACTOR, params, worker_logger, None)
+    worker_logger.info('got result, pickling')
+    
+    # don't keep impedance, can calculate after.
+    if ii_w==None:
+        pickle.dump(df_flow, open(os.path.join(os.getcwd(),'results','interdiction','supply',carrier,f'flow_baseline.pkl'),'wb'))
+        #pickle.dump(df_z, open(os.path.join(os.getcwd(),'results','interdiction','supply',carrier,f'z_baseline.pkl'),'wb'))
+    else:
+        pickle.dump(df_flow, open(os.path.join(os.getcwd(),'results','interdiction','supply',carrier,f'flow_{ii_w}.pkl'),'wb'))
+        #pickle.dump(df_z, open(os.path.join(os.getcwd(),'results','interdiction','supply',carrier,f'z_{ii_w}.pkl'),'wb'))
+        
+    return 1
+    
+def post_interdict_supply(df_nodes, params, dijkstra_adj):
+    """
+    Post-process the supply interdictions
+    """
+    
+    ## turn the dijkstra results into flow dfs
+    if 'COALMINE' in df_nodes['NODETYPE'].unique():
+        carrier = 'coal'
+        interdict_path = '/paths/supply/coal/flow_*.pkl'
+    elif 'LNGTERMINAL' in df_nodes['NODETYPE'].unique():
+        carrier= 'gas'
+        interdict_path = os.path.join(os.getcwd(),'results','interdiction','supply','gas','flow_*.pkl')
+    else:
+        carrier='oil'
+        interdict_path = os.path.join(os.getcwd(),'results','interdiction','supply','oil','flow_*.pkl')
+        
+    run_data = pickle.load(open(params['flowfill_run'][carrier],'rb'))  
+    SCALE_FACTOR = run_data['SCALE_FACTOR']
+    STEP_INI = run_data['STEP_INI']
+    GAMMA = run_data['GAMMA']
+    df_alpha = run_data['ALPHA']
+    print ('df_alpha')
+    print (df_alpha)
+    
+    # for all the supplies do records then parse to a df
+    supply_pickles = glob.glob(interdict_path)
+    bl_path = [f for f in supply_pickles if 'baseline' in f][0]
+    interdict_paths = [f for f in supply_pickles if 'baseline' not in f] 
+    
+    # do the baseline stuff
+    bl_flow = pickle.load(open(bl_path,'rb'))
+    
+    bl_transmission_cost = bl_flow*dijkstra_adj
+    supply_marginal_cost = bl_flow.sum()*df_alpha # sorrect
+    bl_supply_cost = bl_flow * supply_marginal_cost
+
+    bl_total_cost = bl_transmission_cost + bl_supply_cost
+
+    demand_cost = pd.DataFrame(bl_total_cost.sum(axis=1)).rename(columns={0:'baseline'})
+    print (demand_cost)
+    print ('bl',bl_total_cost.sum().sum())
+    
+    # get the total cost
+    records = []
+    
+    for f in tqdm(interdict_paths):
+        id_flow = pickle.load(open(bl_path,'rb'))
+        idx = int(f.split('_')[-1][:-4])
+        id_alpha = df_alpha.copy()
+        id_alpha.iloc[idx] = id_alpha.iloc[idx]*2
+        id_transmission_cost = id_flow*dijkstra_adj
+        supply_marginal_cost = id_flow.sum()*id_alpha # sorrect
+        id_supply_cost = id_flow * supply_marginal_cost
+    
+        id_total_cost = id_transmission_cost + id_supply_cost
+        demand_cost['id'] = id_total_cost.sum(axis=1)
+        demand_cost['diff'] = demand_cost['id'] - demand_cost['baseline']
+        demand_cost['increase'] = demand_cost['diff']/demand_cost['baseline']
+        
+        record = {
+            'idx':idx,
+            'NODE':id_alpha.index[idx],
+            'total_cost':id_total_cost.sum().sum(),
+            'top_5':demand_cost.reset_index().sort_values('diff').iloc[-5:, [demand_cost.reset_index().columns.get_loc(c) for c in ['index','diff','increase']]].values.tolist()
+        }
+        records.append(record)
+        
+    # records to dataframe
+    results_df = pd.DataFrame(records)
+    pickle.dump(results_df, open(os.path.join(os.getcwd(),f'{carrier}_supply_interdict.pkl'),'wb'))
     
     
-def interdict_supply(node_df, edge_df, params, dijkstra_min_adj):
+    
+    return []
+    
+def interdict_supply(node_df, params, dijkstra_min_adj):
     """
     For all supply nodes, try doubling the quadratic term
     """
@@ -145,45 +256,39 @@ def interdict_supply(node_df, edge_df, params, dijkstra_min_adj):
     
     logger = logging.getLogger(f'Dijkstra_post_{carrier}')
     
-    logger.info('loading run data')
     run_data = pickle.load(open(params['flowfill_run'][carrier],'rb'))  
-    SCALE_FACTOR = run_data['SCALE_FACTOR']
-    STEP_INI = run_data['STEP_INI']
-    GAMMA = run_data['GAMMA']
     df_alpha = run_data['ALPHA']
+
+    idxs = [i for i,x in enumerate(df_alpha.index.isin(dijkstra_min_adj.columns).tolist()) if x]
+    print (idxs)
+    logger.info(f'Running {len(idxs)} fills with {N_WORKERS} workers')
     
-    logger.info('running fill algo')
-    ii_w, df_flow, df_z = differential_fill(node_df, dijkstra_min_adj, df_alpha, STEP_INI, GAMMA,SCALE_FACTOR, params, logging.getLogger('ini_diff_fill'), None)
     
+    ### check what needs to be run
+    flow_pickles = glob.glob(os.path.join(os.getcwd(),'results','interdiction','supply','gas','flow*.pkl'))
+    done_idx = [f.split('_')[-1][:-4] for f in flow_pickles]
+    
+    idxs = [ii for ii in idxs if str(ii) not in done_idx]
+    
+    if 'baseline' not in done_idx:
+        idxs = [None]+idxs
+    logger.info(f'{len(idxs)} left to run')
+
     pool = mp.Pool(N_WORKERS)
     
-    for ITER in range(df_alpha.shape(0)//N_WORKERS+1):
-        differential_fill_params = []
-        
-        # prep params, multiplying a supply curve every time
-        for ii_w in range(N_WORKERS):
-            df = df_alpha.copy()
-            df.iloc[ITER+ii_w,:] = df.iloc[ITER+ii_w,:]*2
-            differential_fill_params.append(
-                [
-                    community_nodes,
-                    dijkstra_mincost_adj,  
-                    df,
-                    STEP_INI,
-                    GAMMA,
-                    SF, # try some random scaling factors between 10**2 and 10**6
-                    params,
-                    logging.getLogger(f'dijkstra_fill_worker_{ii_w}'),
-                    ii_w,
-                ]
-            )
+    # redo just [None,0]
+    map_params = list(
+        zip(
+            idxs,
+            [carrier]*(len(idxs)),
+            [params]*(len(idxs)),
+        )
+    )
             
-        results = pool.starmap(differential_fill, differential_fill_params)
+    results = pool.starmap(interdict_supply_worker, map_params)
 
-        fitness = {}
-        for ii_w, df_flow, df_z in results:
-            pickle.dump(df_flow, open(os.path.join(os.getcwd(),'results','interdiction','supply',f'flow_{ITER*N_WORKERS+ii_w}.pkl'),'wb'))
-            pickle.dump(df_z, open(os.path.join(os.getcwd(),'results','interdiction','supply',f'z_{ITER*N_WORKERS+ii_w}.pkl'),'wb'))
+    print ('results')
+    print (results)
 
 
     return []
