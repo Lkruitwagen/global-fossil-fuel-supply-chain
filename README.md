@@ -14,6 +14,26 @@ The full paper is available here: [].
 **Figure 1: Global coal, oil, and gas asset-level data**
 ![Global fossil fuel infrastructure](image_assets/global_infrastructure.png)
 
+## Data
+
+Our work uses only open-source data in order to maximise accessibility and reporduceability. We build on the substantial efforts of public sector organisations to develop and publish open datasets of energy system infrastrucutre and activity, particularly the work of the Global Energy Monitor, the World Resources Institute ResourceWatch, the Global Oil and Gas Features Database, the European Commision Joint Research Council, OpenStreetMap.
+
+| Name                              | N_installations | N_sources  | Quality    |                            Icon    |
+| --------------------------------- | ---------------:| ----------:|:----------:||----------------------------------:|
+| Well Pads                         | 9,845           |         24 | Good       | ![](image_assets/OILWELL.png)      |
+| Oil Fields                        | 25,236          |         63 | Good       | ![](image_assets/OILFIELD.png)     |
+| Coal Mines                        | 3,099           |         32 | Adequate   | ![](image_assets/COALMINE.png)     |
+| Processing & Refining Facilities  | 2,501           |         55 | Good       | ![](image_assets/REFINERY.png)     |
+| LNG Liqufication & Regasification | 329             |         15 | Excellent  | ![](image_assets/LNGTERMINAL.png)  | 
+| Pipelines                         | 94,448          |         82 | Good       | ![](image_assets/PIPELINE.png)     |
+| Ports                             | 3,702           |         10 | Excellent  | ![](image_assets/PORT.png)         |
+| Shipping Routes                   | 8,273           |          1 | Excellent  | ![](image_assets/SHIPPINGROUTE.png)|
+| Railways                          | 496,808         |         52 | Excellent  | ![](image_assets/RAILWAY.png)      |
+| Power Stations                    | 28,664          |          1 | Good       | ![](image_assets/POWERSTATION.png) |
+| Population Centres                | 13,229          |          2 | Excellent  | ![](image_assets/CITY.png)         |
+
+Data must be [downloaded](https://drive.google.com/file/d/1LWXT3WyNpMS8xmdFzStbUyQlzdPLGhv_/view?usp=sharing) and unzipped in a folder `data` in the main directory.
+
 ## Setup
 
 #### Environment
@@ -89,14 +109,12 @@ Enter the repository and run the MakeFile
 We use [PyPy](https://www.pypy.org/index.html) to significantly speed-up dijkstra minimum-cost path search. PyPy uses a just-in-time compiler to significantly speed-up Python code execution. [Download](https://www.pypy.org/download.html) the correct version of PyPy to `bin/`.
 
 
-### (Optional) Neo4J Database
+#### (Optional) Neo4J Database
 1. Note if ssh tunnelling you will need to redirect port 8678 and 8888
 1. [Install neo4j server](https://neo4j.com/docs/operations-manual/current/installation/linux/). We use Neo4j 3.5 in our experiments, 
 but everything described here should also work with Neo4j 4.0
 
-## Data
 
-Data must be [downloaded](https://drive.google.com/file/d/1LWXT3WyNpMS8xmdFzStbUyQlzdPLGhv_/view?usp=sharing) and unzipped in a folder `data` in the main directory.
 
 ## Useage 
 
