@@ -292,7 +292,7 @@ def visualise_flow(params, ne, df_flow, df_community_edges, df_community_nodes):
     df_community_nodes = gpd.GeoDataFrame(df_community_nodes, geometry='geometry')
     df_community_edges = gpd.GeoDataFrame(df_community_edges, geometry='geometry')
     
-    fig, ax = plt.subplots(1,1,figsize=(72,48))
+    fig, ax = plt.subplots(1,1,figsize=(48,60))
     ne.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['ne']), **params['type_style']['ne'])
 
     
@@ -308,6 +308,8 @@ def visualise_flow(params, ne, df_flow, df_community_edges, df_community_nodes):
         color=df_community_edges['color_hex'].values.tolist(),
         linewidth=df_community_edges['s'].values.tolist()
     )
+    ax.set_aspect(1.5)
+    #ax.set_position([0,0,1,1])
     
     plt.savefig(os.path.join(os.getcwd(),'results','figures',f'flow_{carrier}.png'))
     
@@ -417,10 +419,10 @@ def compare_flow(params, ne, df_flow_bl, df_flow_cf, df_community_edges, df_comm
         writer.info(f'idx:{idx}\t difference:{val["difference"]}\t bl_flow:{val["bl_flow"]}')
         
     # want: top/bottom 10 reduced transmission
-    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['difference', 'reduction']].sort_values('difference').iloc[:10].iterrows():
-        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
-    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['difference','reduction']].sort_values('difference').iloc[-10:].iterrows():
-        writer.info(f'idx:{idx}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
+    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['source','target','difference', 'reduction']].sort_values('difference').iloc[:10].iterrows():
+        writer.info(f'src:{val["source"]}\t target:{val["target"]}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
+    for idx, val in df_community_edges.loc[~df_community_edges['source_type'].isin(carrier_supplytypes),['source','target','difference','reduction']].sort_values('difference').iloc[-10:].iterrows():
+        writer.info(f'src:{val["source"]}\t target:{val["target"]}\t difference:{val["difference"]}\t reduction: {val["reduction"]}')
     
     
     
@@ -428,7 +430,7 @@ def compare_flow(params, ne, df_flow_bl, df_flow_cf, df_community_edges, df_comm
     df_community_nodes = gpd.GeoDataFrame(df_community_nodes, geometry='geometry')
     df_community_edges = gpd.GeoDataFrame(df_community_edges, geometry='geometry')
     
-    fig, ax = plt.subplots(1,1,figsize=(72,48))
+    fig, ax = plt.subplots(1,1,figsize=(48,60))
     ne.plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*params['vis_colors']['ne']), **params['type_style']['ne'])
 
     
@@ -444,6 +446,8 @@ def compare_flow(params, ne, df_flow_bl, df_flow_cf, df_community_edges, df_comm
         color=df_community_edges['color_hex'].values.tolist(),
         linewidth=df_community_edges['s'].values.tolist()
     )
+    ax.set_aspect(1.5)
+    #ax.set_position([0,0,1,1])
     
     plt.savefig(os.path.join(os.getcwd(),'results','figures',f'flow_sds_{carrier}.png'))
     
