@@ -32,7 +32,7 @@ Our work uses only open-source data in order to maximise accessibility and repor
 | Power Stations                    | 28,664          |          1 | Good       | ![](image_assets/POWERSTATION.png) |
 | Population Centres                | 13,229          |          2 | Excellent  | ![](image_assets/CITY.png)         |
 
-Data must be [downloaded](https://drive.google.com/file/d/1LWXT3WyNpMS8xmdFzStbUyQlzdPLGhv_/view?usp=sharing) and unzipped in a folder `data` in the main directory.
+Data must be [downloaded](https://drive.google.com/file/d/1LWXT3WyNpMS8xmdFzStbUyQlzdPLGhv_/view?usp=sharing) and unzipped in a folder `data/` in the main directory.
 
 ## Setup
 
@@ -40,7 +40,6 @@ Data must be [downloaded](https://drive.google.com/file/d/1LWXT3WyNpMS8xmdFzStbU
 
 On a fresh linux install you will require the following:
 
-    sudo apt-get update
     sudo apt-get install python3-dev build-essential libspatialindex-dev openjdk-8-jre
 
 We use [conda](https://docs.conda.io/en/latest/miniconda.html) for environment management. Create a new environment:
