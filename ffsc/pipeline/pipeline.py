@@ -59,7 +59,8 @@ from ffsc.pipeline.nodes.spatialjoin import (
 from ffsc.pipeline.nodes.firstlastmile import (
     firstmile_edge,
     powerstations_lastmile,
-    cities_delauney
+    cities_delauney,
+    shippingroutes_lastmile
 )
 from ffsc.pipeline.nodes.explode import (
     explode_edges_railways,
@@ -72,6 +73,10 @@ from ffsc.pipeline.nodes.simplify import (
 )
 from ffsc.pipeline.nodes.internationaldateline import (
     connect_IDL    
+)
+from ffsc.pipeline.nodes.missinglink import (
+    missinglink_cities,
+    missinglink_powerstations
 )
 
 ALL_SECTORS = ['shippingroutes','pipelines','railways','refineries','oilfields','oilwells','coalmines','lngterminals','ports','cities','powerstations']
@@ -117,7 +122,7 @@ def get_pipeline(tag=None):
         if type(tag)==str:
             return Pipeline([n for n in data_science_pipeline.nodes if tag in n.tags])
         elif type(tag)==list:
-            return Pipeline([n for n in data_science_pipeline.nodes if np.isin(n.tags,tag).any()])
+            return Pipeline([n for n in data_science_pipeline.nodes if len(n.tags - set(tag)) < len(n.tags)])
         
     else:
         return data_science_pipeline
@@ -266,7 +271,19 @@ def firstlastmile_pipeline(**kwargs):
             ['sjoin_cities_data','ne'],
             'flmile_edges_cities',
             tags = tags+['lastmile','lastmile_cities']
-        )
+        ),
+        node(
+            shippingroutes_lastmile,
+            ['sjoin_edges_shippingroutes_ports','sjoin_shippingroutes_data','sjoin_ports_data'],
+            'flmile_edges_shippingroutes_ports',
+            tags= tags+['lastmile','lastmile_shippingroutes','lastmile_shippingroutes_ports']
+        ),
+        node(
+            shippingroutes_lastmile,
+            ['sjoin_edges_shippingroutes_lngterminals','sjoin_shippingroutes_data','sjoin_lngterminals_data'],
+            'flmile_edges_shippingroutes_lngterminals',
+            tags= tags+['lastmile','lastmile_shippingroutes','lastmile_shippingroutes_lng']
+        ),
     ]
     
     IDL_nodes = [
@@ -281,7 +298,7 @@ def firstlastmile_pipeline(**kwargs):
     null_nodes = [node(null_forward, f'sjoin_{sector}_data', f'flmile_{sector}_data',tags = tags+['flm_null',f'flm_null_{sector}'])
                  for sector in ALL_SECTORS]
     null_nodes += [node(null_forward, f'sjoin_edges_{sector1}_{sector2}', f'flmile_edges_{sector1}_{sector2}', tags=tags+['flm_null',f'flm_null_{sector1}_{sector2}'])
-                  for sector1, sector2 in SJOIN_PAIRS]
+                  for sector1, sector2 in SJOIN_PAIRS if sector1!='shippingroutes']
     
     return Pipeline(firstmile_nodes + lastmile_nodes + IDL_nodes + null_nodes)
     
@@ -327,7 +344,7 @@ def explode_pipeline(**kwargs):
         node(
             explode_edges_shippingroutes,
             ['flmile_shippingroutes_data']+SHIPPINGROUTES_EDGES + ['flmile_idl_edges'],
-            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes','explode_keepnodes_shippingroutes','explode_edges_shippingroutes_other', 'explode_edges_other_shippingroutes'],
+            ['explode_shippingroutes_data', 'explode_edges_shippingroutes_shippingroutes','explode_keepnodes_shippingroutes','explode_edges_shippingroutes_other'],
             tags=tags+['explode_edges','explode_edges_shippingroutes']
         ),
     ]
@@ -348,6 +365,14 @@ def explode_pipeline(**kwargs):
              tags=tags+['explode_null',f'explode_null_{sector}']
             )
         for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
+    ]
+    
+    null_nodes += [
+        node(null_forward,
+             f'flmile_edges_cities',
+             f'explode_edges_cities',
+             tags=tags+['explode_null',f'explode_null_cities']
+        )
     ]
     
 
@@ -380,22 +405,26 @@ def simplify_pipeline(**kwargs):
         ),
     ]
     
-
-    
-    null_nodes = [
-        node(null_forward, 
-             f'explode_edges_{sector1}_{sector2}', 
-             f'simplify_edges_{sector1}_{sector2}', 
-             tags=tags+['null',f'null_{sector1}_{sector2}']
-            )
-        for sector1, sector2 in SJOIN_PAIRS
+    missinglink_nodes = [
+        node(
+            missinglink_cities,
+            ['explode_edges_cities','explode_cities_data','explode_ports_data'],
+            'simplify_edges_cities',
+            tags = tags+['simplify_missinglinks','simplify_missinglinks_cities']
+        ),
+        node(
+            missinglink_powerstations,
+            ['flow_coal_missing_powerstations','flow_oil_missing_powerstations','flow_gas_missing_powerstations','explode_edges_powerstations', 'explode_cities_data'],
+            'simplify_edges_powerstations',
+            tags = tags+['simplify_missinglinks','simplify_missinglinks_powerstations']
+        ),
     ]
     
-    null_nodes += [
+    null_nodes = [
         node(null_forward,
              f'explode_{sector}_data',
              f'simplify_{sector}_data',
-             tags=tags+['null',f'null_{sector}']
+             tags=tags+['simplify_null',f'null_{sector}']
             )
         for sector in ['oilfields','oilwells','refineries','coalmines','lngterminals','ports','cities','powerstations']
     ]
@@ -404,18 +433,28 @@ def simplify_pipeline(**kwargs):
         node(null_forward,
              f'explode_edges_{sector}',
              f'simplify_edges_{sector}',
-             tags=tags+['null',f'null_edges_{sector}']
+             tags=tags+['simplify_null',f'null_edges_{sector}']
             )
-        for sector in ['oilfields','oilwells','coalmines','cities','powerstations']
+        for sector in ['oilfields','oilwells','coalmines']
     ]
     
     null_nodes += [
         node(null_forward,
-            'explode_idl_edges',
-            'simplify_idl_edges',
-            tags=tags+['null']
-        )
+             f'explode_edges_other_{sector}',
+             f'simplify_edges_other_{sector}',
+             tags=tags+['simplify_null',f'simplify_null_edges_{sector}']
+            )
+        for sector in ['pipelines','railways']
     ]
     
-    return Pipeline(simplify_nodes+null_nodes)
+    null_nodes += [
+        node(null_forward,
+             f'explode_edges_{sector}_other',
+             f'simplify_edges_{sector}_other',
+             tags=tags+['simplify_null',f'simplify_null_edges_{sector}']
+            )
+        for sector in ['pipelines','railways','shippingroutes']
+    ]
+    
+    return Pipeline(simplify_nodes+missinglink_nodes+null_nodes)
 

@@ -90,8 +90,9 @@ def preprocess_railways(fc):
 def preprocess_refineries(gdf_refineries,gdf_processingplants):
     logger = logging.getLogger('preprocess_refineries')
     gdf = pd.concat([gdf_refineries,gdf_processingplants])
+    gdf['new_index'] = range(len(gdf))
 
-    return do_preprocess(gdf, 'index','REFINERY',None, logger)
+    return do_preprocess(gdf, 'new_index','REFINERY',None, logger)
 
 def preprocess_oilwells(gdf):
     logger = logging.getLogger('preprocess_oilwells')

@@ -10,7 +10,12 @@ import networkx as nx
 
 
 def simplify_edges(node_df, edge_df, keep_nodes):
+    print ('node df')
     print (node_df)
+    print ('keep nodes')
+    print (keep_nodes)
+    print ('edge df')
+    print (edge_df)
     asset_name = node_df.iloc[0]['NODES'].split('_')[0]
     logger = logging.getLogger(f'Simplify_edges_{asset_name}')
     
@@ -27,9 +32,11 @@ def simplify_edges(node_df, edge_df, keep_nodes):
     # get edges where degree==2
     logger.info(f'Getting edges where degree')
     degrees = {node:val for (node, val) in G.degree() if val==2}
+    
+    
 
     # remove nodes to keep
-    simplify_nodes = set(degrees.keys()) - set(keep_nodes)
+    simplify_nodes = set(degrees.keys()) - set(keep_nodes['KEEP_NODES'].values.tolist())
 
     # get subgraph node lists
     logger.info(f'getting sugraph nodes')

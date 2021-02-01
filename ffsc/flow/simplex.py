@@ -14,12 +14,14 @@ try:
 except NameError:
     pass
 
-logger=logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-tic = time.time()
 
-
-def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
+def network_simplex(G, demand='demand', capacity='capacity', weight='weight', logger=None):
+    
+    if not logger:
+        logger=logging.getLogger(__name__)
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    tic = time.time()
+    
     r"""Find a minimum cost flow satisfying all demands in digraph G.
 
     This is a primal network simplex algorithm that uses the leaving
@@ -544,12 +546,12 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
 
         global_counter +=1
 
-        if global_counter %1000 ==0:
+        if global_counter %10000 ==0:
             #print (x[0:10], C[0:10]) np.nansum([c * x for c, x in zip(C, x)])  #
             flow_cost = sum(c * x for c, x in zip(C, x))
-            logger.info(f'Counter: {global_counter}, cost: {flow_cost}, time: {time.time()-tic}')
-            with open('./write_log.log','a+') as f:
-                f.write('Counter: {}, Cost: {}, Time: {}\r\n'.format(global_counter, flow_cost,time.time()-tic))
+            logger.info(f'\t Counter: {global_counter},\t cost: {flow_cost},\t time: {time.time()-tic:.2f}')
+            #with open('./write_log.log','a+') as f:
+            #    f.write('Counter: {}, Cost: {}, Time: {}\r\n'.format(global_counter, flow_cost,time.time()-tic))
 
     ###########################################################################
     # Infeasibility and unboundedness detection

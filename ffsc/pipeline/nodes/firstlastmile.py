@@ -9,6 +9,7 @@ from pandas.core.common import SettingWithCopyWarning
 
 from ffsc.pipeline.nodes.mp_sjoin_mindist import *
 from ffsc.pipeline.nodes.mp_utmbuffer import *
+from ffsc.pipeline.nodes.utils import V_inv
 
 N_WORKERS=12
 
@@ -188,8 +189,8 @@ def cities_delauney(df_cities, gdf_ne):
     df_lss['geometry'] = df_lss['points'].progress_apply(lambda el: geometry.LineString([(pt.x, pt.y) for pt in el]))
     
     logger.info(f'Getting coastline and intersection')
-    coastline_mp = gdf_ne.geometry.boundary.unary_union # paralellise this
-    coastline_df = pd.DataFrame(gpd.GeoDataFrame(list(coastline_mp)).rename(columns={0:'geometry'}).set_geometry('geometry'))
+    coastline_mp = gdf_ne.geometry.unary_union # paralellise this THIS RIGHT HERE BACKWARDDSS
+    coastline_df = pd.DataFrame(gpd.GeoDataFrame([pp.exterior for pp in list(coastline_mp)]).rename(columns={0:'geometry'}).set_geometry('geometry'))
     logger.info(f'casting to str')
     coastline_df['geometry'] = coastline_df['geometry'].progress_apply(lambda el: el.wkt)
     df_lss['geom_str']=df_lss['geometry'].progress_apply(lambda el: el.wkt) # L_idx
@@ -219,3 +220,41 @@ def cities_delauney(df_cities, gdf_ne):
     logger.info(f'Got {len(df_lss)} finalmile city-city connections')
     
     return df_lss[['START','END','DISTANCE']]
+
+
+def shippingroutes_lastmile(df_edges_shippingroutes, df_shippingroutes_data, df_asset_data):
+    asset_name = df_edges_shippingroutes.iloc[0,df_edges_shippingroutes.columns.get_loc('END')].split('_')[0]
+    logger = logging.getLogger('flmile'+'_'+'SHIPPINGROUTES-'+asset_name)
+    logger.info('Mapping geometries')
+    
+    df_asset_data['geometry'] = df_asset_data['geometry'].apply(wkt.loads)
+    df_shippingroutes_data['geometry'] = df_shippingroutes_data['geometry'].apply(wkt.loads)
+    
+    #print (df_edges_shippingroutes)
+    
+    matches = []
+
+    def mindist(pt1,pt2):
+
+        try:
+            return V_inv((pt1.y,pt1.x),(pt2.y, pt2.x))[0]*1000
+        except:
+            return np.inf
+
+    for idx, row in tqdm(df_asset_data.iterrows()):
+        df_shippingroutes_data['NEAREST_PT'] = df_shippingroutes_data['geometry'].apply(lambda geom: ops.nearest_points(geom,row['geometry'])[0])
+        df_shippingroutes_data['DIST'] = df_shippingroutes_data['NEAREST_PT'].apply(lambda pt: mindist(pt,row['geometry'])) #V_inv((50,179),(50,-175))
+        min_idx = df_shippingroutes_data['DIST'].idxmin()
+
+        matches.append({
+            'START':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('unique_id')],
+            'END':row['unique_id'],
+            'NEAREST_PT':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('NEAREST_PT')].wkt,
+            'DISTANCE':df_shippingroutes_data.iloc[min_idx,df_shippingroutes_data.columns.get_loc('DIST')]
+        })
+        
+    df_matches = pd.DataFrame(matches)
+    
+    df_matches = df_matches[~df_matches['END'].isin(df_edges_shippingroutes['END'])]
+    
+    return df_edges_shippingroutes.append(df_matches,ignore_index=True)

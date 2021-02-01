@@ -129,8 +129,8 @@ def buffer_and_split(df, parameters):
     asset_name = df.iloc[0]['unique_id'].split('_')[0]
     logger = logging.getLogger('prep_buffer'+'_'+asset_name)
     
-    logger.info(f'Getting geometries buffered by {parameters["BUFFER"]}m')
-    df['buffer_geom'] = mp_buffer(df,parameters['BUFFER'],N_WORKERS)
+    logger.info(f'Getting geometries buffered by {parameters["BUFFER"][asset_name]}m')
+    df['buffer_geom'] = mp_buffer(df,parameters['BUFFER'][asset_name],N_WORKERS)
     
     logger.info(f'Mapping buffer geom to str')
     df['buffer_geom'] = df['buffer_geom'].apply(lambda el: el.wkt)

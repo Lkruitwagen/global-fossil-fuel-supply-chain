@@ -5,14 +5,51 @@
 parameters:
   type: kedro.extras.datasets.yaml.YAMLDataSet
   filepath: conf/base/parameters.yml
+  
+flow_parameters:
+  type: kedro.extras.datasets.yaml.YAMLDataSet
+  filepath: conf/base/flow_parameters.yml
+  
+vis_parameters:
+  type: kedro.extras.datasets.yaml.YAMLDataSet
+  filepath: conf/base/vis_parameters.yml
 
 ne:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
   filepath: data/ne/ne_10m_countries.geojson
+  
+dummy:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/dummy.pqt
+  
+##################################################
+## TRADE DATA
+##################################################
+
+coal_trade:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/trade_balances/coal_trade.csv
+  
+gas_trade:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/trade_balances/gas_trade.csv
+  
+oil_trade:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/trade_balances/oil_trade.csv
+  
 
 ##################################################
 ## RAW DATA
 ##################################################
+
+iso2:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/iso2.csv
+  
+sds2040:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/sds2040.csv
 
 raw_shippingroutes_data:
   type: kedro.extras.datasets.geopandas.GeoJSONDataSet
@@ -690,3 +727,248 @@ simplify_edges_shippingroutes_shippingroutes:
 simplify_idl_edges:
   type: kedro.extras.datasets.pandas.ParquetDataSet
   filepath: results/simplify/simplify_idl_edges.pqt
+  
+simplify_edges_pipelines_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_pipelines_other.pqt
+
+simplify_edges_other_pipelines:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_pipelines.pqt
+
+simplify_edges_railways_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_railways_other.pqt
+
+simplify_edges_other_railways:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_railways.pqt
+  
+simplify_edges_shippingroutes_other:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_shippingroutes_other.pqt
+  
+simplify_edges_other_shippingroutes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/simplify/simplify_edges_other_shippingroutes.pqt
+  
+  
+##################################################
+## FLOW
+##################################################
+
+flow_coal_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_edges.pqt
+  
+flow_coal_nx_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_nx_edges.pqt
+  
+flow_coal_nx_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_nx_nodes.pqt
+  
+flow_gas_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_edges.pqt
+  
+flow_gas_nx_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_nx_edges.pqt
+  
+flow_gas_nx_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_nx_nodes.pqt
+  
+flow_oil_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_edges.pqt
+  
+flow_oil_nx_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_nx_edges.pqt
+  
+flow_oil_nx_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_nx_nodes.pqt
+  
+flow_coalmines_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coalmines_data.pqt
+  
+flow_oilfields_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oilfields_data.pqt
+  
+flow_oilwells_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oilwells_data.pqt
+  
+flow_cities_data:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_cities_data.pqt
+  
+global_energy_production:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: data/primary_energy_production.csv
+  
+flow_coal_missing_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_missing_cities.pqt
+  
+flow_coal_missing_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_coal_missing_powerstations.pqt
+  
+flow_gas_missing_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_missing_cities.pqt
+  
+flow_gas_missing_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_gas_missing_powerstations.pqt
+  
+flow_oil_missing_cities:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_missing_cities.pqt
+  
+flow_oil_missing_powerstations:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/flow/flow_oil_missing_powerstations.pqt
+  
+##################################################
+## INTERDICTION & COMMUNITIES
+##################################################
+
+flow_baseline_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_baseline_coal.pqt
+  
+flow_baseline_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_baseline_oil.pqt
+  
+flow_baseline_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_baseline_gas.pqt
+  
+flow_baseline_costs:
+  type: kedro.extras.datasets.pandas.CSVDataSet
+  filepath: results/interdiction/flow_baseline_cost.csv
+  
+community_coal_nodes_interim:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_coal_nodes.pqt
+  
+community_oil_nodes_interim:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_oil_nodes.pqt
+  
+community_gas_nodes_interim:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_gas_nodes.pqt
+
+community_coal_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_coal_nodes.pqt
+  
+community_oil_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_oil_nodes.pqt
+  
+community_gas_nodes:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_gas_nodes.pqt
+  
+community_coal_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_coal_edges.pqt
+  
+community_oil_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_oil_edges.pqt
+  
+community_gas_edges:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_gas_edges.pqt
+  
+communities_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/communities_coal.pqt
+  
+communities_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/communities_oil.pqt
+  
+communities_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/communities_gas.pqt
+  
+community_coal_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_coal_iso2.pqt
+  
+community_oil_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_oil_iso2.pqt
+  
+community_gas_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/communities/community_gas_iso2.pqt
+  
+flow_coal_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_coal_iso2.pqt
+  
+flow_oil_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_oil_iso2.pqt
+  
+flow_gas_iso2:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_gas_iso2.pqt
+  
+coal_nodeflags:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal_nodeflags.pqt
+  
+coal_reachable:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal_reachable.pqt
+  
+coal_dijkstra_mincost_adj:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/coal/dijkstra_mincost_adj.pqt
+
+gas_dijkstra_mincost_adj:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/gas/dijkstra_mincost_adj.pqt
+  
+oil_dijkstra_mincost_adj:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/dijkstra_paths/oil/dijkstra_mincost_adj.pqt
+  
+flow_dijkstra_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_coal.pqt
+  
+flow_dijkstra_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_gas.pqt
+  
+flow_dijkstra_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_dijkstra_oil.pqt
+  
+flow_sds_coal:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_coal.pqt
+  
+flow_sds_gas:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_gas.pqt
+  
+flow_sds_oil:
+  type: kedro.extras.datasets.pandas.ParquetDataSet
+  filepath: results/interdiction/flow_sds_oil.pqt
