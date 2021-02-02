@@ -73,6 +73,44 @@ def visualise_assets_gas(params, df_edges, refineries, oilfields, oilwells, coal
     visualise_assets(params, df_edges, refineries, oilfields, oilwells, coalmines, lngterminals, ports, cities, powerstations, df_missing_cities, df_missing_powerstations, railways,shippingroutes, pipelines, ne)
     return []
 
+def visualise_all_assets(vis_params):
+
+
+    ne = kedro_catalog.load('ne')
+    gdfs = {}
+    gdfs['SHIPPINGROUTE'] = kedro_catalog.load('raw_shippingroutes_data')
+    gdfs['PORT'] = kedro_catalog.load('raw_ports_data')
+    gdfs['LNGTERMINAL'] = kedro_catalog.load('raw_lngterminals_data')
+    gdfs['COALMINE'] = kedro_catalog.load('raw_coalmines_data')
+    gdfs['OILFIELD'] = kedro_catalog.load('raw_oilfields_data')
+    gdfs['OILWELL'] = kedro_catalog.load('raw_oilwells_data')
+    gdfs['REFINERY'] = kedro_catalog.load('raw_processingplants_data')
+    gdfs['RAILWAY'] = kedro_catalog.load('raw_railways_data')
+    gdfs['RAILWAY'] = gpd.GeoDataFrame.from_features(gdfs['RAILWAY']['features'])
+    gdfs['PIPELINE'] = kedro_catalog.load('raw_pipelines_data')
+    gdfs['PIPELINE'] = gpd.GeoDataFrame.from_features(gdfs['PIPELINE']['features'])
+    gdfs['CITY'] = kedro_catalog.load('raw_cities_energy_data')
+    gdfs['CITY']['orig_geom'] = gdfs['CITY']['geom_gj'].apply(lambda el: geometry.shape(el))
+    gdfs['CITY'] = gdfs['CITY'].set_geometry('orig_geom')
+    gdfs['POWERSTATION'] = kedro_catalog.load('raw_pipelines_data')
+    gdfs['POWERSTATION'] = gpd.GeoDataFrame.from_features(gdfs['POWERSTATION']['features'])
+
+    fig, ax = plt.subplots(1,1,figsize=(36,36))
+    ne.boundary.plot(ax=ax,color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['ne']),zorder=0)
+    gdfs['SHIPPINGROUTE'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['SHIPPINGROUTE']), lw=0.5, zorder=1)
+    gdfs['PORT'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['PORT']), markersize=5, zorder=1)
+    gdfs['LNGTERMINAL'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['LNGTERMINAL']), markersize=13, zorder=1)
+    gdfs['COALMINE'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['COALMINE']), markersize=8, zorder=1)
+    gdfs['OILFIELD'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['OILFIELD']),alpha=0.5, zorder=1)
+    gdfs['OILWELL'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['OILWELL']),markersize=5, zorder=1)
+    gdfs['REFINERY'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['REFINERY']),markersize=5, zorder=1)
+    gdfs['PIPELINE'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['PIPELINE']),lw=0.3, zorder=1)
+    gdfs['RAILWAY'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['RAILWAY']),lw=0.5, zorder=1)
+    gdfs['CITY'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['CITY']), zorder=2)
+    gdfs['POWERSTATION'].plot(ax=ax, color='#{:02x}{:02x}{:02x}'.format(*vis_params['vis_colors']['POWERSTATION']),markersize=8,alpha=0.5, zorder=2)
+    ax.set_aspect(1.2)
+    plt.savefig('./all_assets_vis.png', bbox_inches='tight')
+
 def prep_assets(params, df_edges, refineries, oilfields, oilwells, coalmines, lngterminals, ports, cities, powerstations, df_missing_cities, df_missing_powerstations, railways,shippingroutes, pipelines, ne):
     logger = logging.getLogger('Prep assets')
     df_ptassets = pd.concat([refineries, oilfields, oilwells, coalmines, lngterminals, ports, cities, powerstations])

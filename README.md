@@ -12,7 +12,7 @@ We prepare a geospatial arrangement of the global oil, gas, and coal supply chai
 The full paper is available here: [].
 
 **Figure 1: Global coal, oil, and gas asset-level data**
-![Global fossil fuel infrastructure](image_assets/global_infrastructure.png)
+![Global fossil fuel infrastructure](image_assets/all_assets.png)
 
 ## Data
 
