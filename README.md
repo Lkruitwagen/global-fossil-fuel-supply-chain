@@ -2,7 +2,7 @@
 
 **Kruitwagen, L., Klaas, J., Baghaei Lakeh, A., & Fan, J.**
 
-A repo for building a network model of the global fossil fuel supply chain using asset-level data. A project in support of the [Oxford Martin Programme on the Post-Carbon Transition](https://www.oxfordmartin.ox.ac.uk/post-carbon/) generously supported by [QuantumBlack](https://www.quantumblack.com/) and [Microsoft AI for Earth](https://www.microsoft.com/en-us/ai/ai-for-earth).
+A repo for building a network model of the global fossil fuel supply chain using asset-level data. A project in support of the [Oxford Martin Programme on the Post-Carbon Transition](https://www.oxfordmartin.ox.ac.uk/post-carbon/) generously supported by [QuantumBlack, a McKinsey company](https://www.quantumblack.com/) and [Microsoft AI for Earth](https://www.microsoft.com/en-us/ai/ai-for-earth).
 
 ## Abstract
 
