@@ -2,14 +2,14 @@
 
 **Kruitwagen, L., Klaas, J., Baghaei Lakeh, A., & Fan, J.**
 
-A repo for building a network model of the global fossil fuel supply chain using asset-level data. A project in support of the [Oxford Martin Programme on the Post-Carbon Transition](https://www.oxfordmartin.ox.ac.uk/post-carbon/) generously supported by [QuantumBlack, a McKinsey company](https://www.quantumblack.com/) and [Microsoft AI for Earth](https://www.microsoft.com/en-us/ai/ai-for-earth).
+A repo for building a network model of the global fossil fuel supply chain using asset-level data. A project in support of the [Oxford Martin Programme on the Post-Carbon Transition](https://www.oxfordmartin.ox.ac.uk/post-carbon/) generously supported by [Microsoft AI for Earth](https://www.microsoft.com/en-us/ai/ai-for-earth).
 
 ## Abstract
 
 Climate change risks manifest in the real economy, with grave consequences for welfare of human populations and the biosphere; the economic returns of industrial sectors; and geopolitical stability. Understanding the diffusion of risks in real infrastructure networks is an urgent priority for delivering climate change mitigation, adaptation, and resiliency. The oil, gas, and coal supply chains are the most salient progenitors and inheritors of these environmental risks.
 We prepare a geospatial arrangement of the global oil, gas, and coal supply chains using open-source asset-level data. The resulting complex network has 6.09mn nodes and 15.70mn edges and is implemented in a graph database. With estimates of annual coal, gas, and oil demand in 13,229 global population centres and 8,165 global power stations, we use a minimum-cost flow method to estimate global asset-level energy flows. We develop a method for cross-validating and tuning our network flow simulation using aggregate country-level import and export statistics. We demonstrate two analyses of asset-level transition risk: a counter-factual demand shock scenario consistent with the IEA Sustainable Development Scenario; and supply shock scenarios developed by interdicting regionally-aggregated coal, oil, and gas supplies. Our contribution lies in the global scope of our asset-level supply chain and the novelty of our minimum-cost flow method. We conclude with a discussion of further research directions and make the graph database and supporting code publicly available.
 
-The full paper is available here: [].
+The full paper is available [here](https://papers.ssrn.com/abstract=3783412).
 
 **Figure 1: Global coal, oil, and gas asset-level data**
 ![Global fossil fuel infrastructure](image_assets/all_assets.png)
