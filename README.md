@@ -44,7 +44,7 @@ On a fresh linux install you will require the following:
 
 We use [conda](https://docs.conda.io/en/latest/miniconda.html) for environment management. Create a new environment:
 
-    conda create -n ffsc python=3.7
+    conda create -n ffsc python=3.8
 
 Activate your conda environment:
 
