@@ -1,4 +1,4 @@
-joblib==0.14.1
+joblib==1.2.0
 kedro>=0.16.0
 kedro-viz>=3.1.0, <4.0
 nbstripout==0.3.3
